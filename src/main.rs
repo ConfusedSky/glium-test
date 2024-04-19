@@ -1,4 +1,4 @@
-use glium::{implement_vertex, Surface};
+use glium::{implement_vertex, DrawParameters, Surface};
 
 type Point = [f32; 2];
 
@@ -31,10 +31,10 @@ fn main() {
 
     #[rustfmt::skip]
     let verticies = [
-        [-0.5, -0.5],
-        [-0.75, 0.5],
-        [0.75, 0.5],
-        [0.5, -0.5],
+        [-0.5, 0.0],
+        [-0.0, 1.0],
+        [0.0, -1.0],
+        [0.5, 0.0],
     ];
 
     let shape: Vec<_> = verticies
@@ -57,7 +57,7 @@ fn main() {
         .collect();
     let curve_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 
-    let indices = glium::index::NoIndices(glium::index::PrimitiveType::LineStrip);
+    let indices = glium::index::NoIndices(glium::index::PrimitiveType::Points);
     let vertex_shader_src = r#"#version 400
 
         in vec2 position;
@@ -89,24 +89,31 @@ fn main() {
         };
 
         let mut target = display.draw();
-
         target.clear_color(0.0, 0.0, 1.0, 1.0);
+
+        let mut params = DrawParameters {
+            point_size: Some(12.0),
+            ..Default::default()
+        };
         target
             .draw(
                 &control_points_buffer,
                 &indices,
                 &program,
                 &glium::uniforms::EmptyUniforms,
-                &Default::default(),
+                &params,
             )
             .unwrap();
+
+        params.point_size = Some(2.0);
+
         target
             .draw(
                 &curve_buffer,
                 &indices,
                 &program,
                 &glium::uniforms::EmptyUniforms,
-                &Default::default(),
+                &params,
             )
             .unwrap();
 
