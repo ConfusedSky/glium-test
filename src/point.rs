@@ -1,6 +1,6 @@
 use crate::{Position, PositionU};
 use glium::{
-    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType, Display, Frame, IndexBuffer, Program, Surface, VertexBuffer
+    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType, Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer
 };
 
 #[derive(Clone, Copy)]
@@ -10,14 +10,15 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, uv);
 
-pub struct Points {
+pub struct Points<'a> {
     buffer: VertexBuffer<Vertex>,
     indicies: IndexBuffer<u16>,
     program: Program,
+    params: DrawParameters<'a>,
     points: Vec<PositionU>,
 }
 
-impl Points {
+impl<'a> Points<'a> {
     pub fn new(display: &Display<WindowSurface>) -> Self {
         let points = vec![
             Vertex {
@@ -58,10 +59,20 @@ impl Points {
         let fragment_shader_src = r#"#version 400
             out vec4 color;
 
+            uniform vec3 point_color;
+
             varying lowp vec2 texcoord;
 
+            float circle(in vec2 _st, in float _radius){
+                vec2 dist = _st-vec2(0.5);
+                return 1.-smoothstep(_radius-(_radius*0.01),
+                                    _radius+(_radius*0.01),
+                                    dot(dist,dist)*4.0);
+            }
+
             void main() {
-                color = vec4(1.0, texcoord, 1.0);
+                float a = circle(texcoord, 1);
+                color = vec4(point_color, a);
             }
         "#;
 
@@ -69,22 +80,30 @@ impl Points {
             glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None)
                 .unwrap();
 
+        let params = DrawParameters {
+            blend: glium::Blend::alpha_blending(),
+            ..Default::default()
+        };
+
         Self {
             buffer,
             indicies: index_buffer,
             program,
+            params,
             points: vec![],
         }
     }
 
     pub fn draw(&self, target: &mut Frame, screen_size: &PositionU) {
-        let size = 12.0;
+        let size = 20.0;
         let scale = [
             size / screen_size[0] as f32, 
             size / screen_size[1] as f32, 
         ];
+        let color: [f32; 3] = [1.0, 0.0, 0.0];
         let uniforms = dynamic_uniform! {
             scale: &scale,
+            point_color: &color,
         };
         target
             .draw(
@@ -92,7 +111,7 @@ impl Points {
                 &self.indicies,
                 &self.program,
                 &uniforms,
-                &Default::default(),
+                &self.params,
             )
             .unwrap();
     }
