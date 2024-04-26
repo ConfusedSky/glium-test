@@ -2,12 +2,11 @@ mod bezier;
 mod point;
 mod point_cloud;
 
+use crate::point_cloud::PointCloud;
 use glium::{implement_vertex, Surface};
 use point::Points;
-use crate::point_cloud::PointCloud;
 
 type Position = [f32; 2];
-type PositionU = [u32; 2];
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -21,26 +20,25 @@ fn main() {
         .expect("event loop building");
     let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
     let window_size = window.inner_size();
-    let window_size = [window_size.width, window_size.height];
+    println!("{window_size:?}");
+    let window_size = [window_size.width as f32, window_size.height as f32];
 
     #[rustfmt::skip]
-    let control_points = [
+    let control_positions = [
         [-0.5, 0.0],
         [-0.0, 0.9],
         [0.0, -0.9],
         [0.5, 0.0],
     ];
 
-    let shape: Vec<_> = control_points
-        .into_iter()
-        .map(|x| Vertex { position: x })
-        .collect();
-    let control_points_cloud = PointCloud::new(&display, &shape, 12.0);
-
-    let curve_points = bezier::generate_bezier_points(&control_points);
+    let curve_points = bezier::generate_bezier_points(&control_positions);
     let curve_cloud = PointCloud::new(&display, &curve_points, 2.0);
 
-    let indicies = Points::new(&display);
+    let mut control_points = Points::new(&display);
+    control_points.points = control_positions
+        .iter()
+        .map(|[x, y]| [x * window_size[0], y * window_size[1]])
+        .collect();
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -54,9 +52,8 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
-        control_points_cloud.draw(&mut target);
         curve_cloud.draw(&mut target);
-        indicies.draw(&mut target, &window_size);
+        control_points.draw(&mut target, &window_size);
 
         target.finish().unwrap();
     });

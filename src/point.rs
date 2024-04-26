@@ -1,6 +1,7 @@
-use crate::{Position, PositionU};
+use crate::Position;
 use glium::{
-    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType, Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer
+    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
+    Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer,
 };
 
 #[derive(Clone, Copy)]
@@ -15,7 +16,7 @@ pub struct Points<'a> {
     indicies: IndexBuffer<u16>,
     program: Program,
     params: DrawParameters<'a>,
-    points: Vec<PositionU>,
+    pub points: Vec<Position>,
 }
 
 impl<'a> Points<'a> {
@@ -39,19 +40,25 @@ impl<'a> Points<'a> {
             },
         ];
         let buffer = glium::VertexBuffer::new(display, &points).unwrap();
-        let index_buffer =
-            glium::IndexBuffer::new(display, PrimitiveType::TrianglesList, &[0u16, 1, 2, 1, 3, 2]).unwrap();
+        let index_buffer = glium::IndexBuffer::new(
+            display,
+            PrimitiveType::TrianglesList,
+            &[0u16, 1, 2, 1, 3, 2],
+        )
+        .unwrap();
 
         let vertex_shader_src = r#"#version 400
             in vec2 position;
             in vec2 uv;
 
-            uniform vec2 scale;
+            uniform vec2 window_size;
+            uniform float point_size;
+            uniform vec2 offset;
 
             varying lowp vec2 texcoord;
 
             void main() {
-                gl_Position = vec4(position * scale, 0.0, 1.0);
+                gl_Position = vec4((position * point_size + offset) / window_size, 0.0, 1.0);
                 texcoord = uv;
             }
         "#;
@@ -94,25 +101,26 @@ impl<'a> Points<'a> {
         }
     }
 
-    pub fn draw(&self, target: &mut Frame, screen_size: &PositionU) {
-        let size = 20.0;
-        let scale = [
-            size / screen_size[0] as f32, 
-            size / screen_size[1] as f32, 
-        ];
+    pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
+        let size: f32 = 15.0;
         let color: [f32; 3] = [1.0, 0.0, 0.0];
-        let uniforms = dynamic_uniform! {
-            scale: &scale,
-            point_color: &color,
-        };
-        target
-            .draw(
-                &self.buffer,
-                &self.indicies,
-                &self.program,
-                &uniforms,
-                &self.params,
-            )
-            .unwrap();
+
+        for offset in &self.points {
+            let uniforms = dynamic_uniform! {
+                point_size: &size,
+                window_size: screen_size,
+                point_color: &color,
+                offset: offset,
+            };
+            target
+                .draw(
+                    &self.buffer,
+                    &self.indicies,
+                    &self.program,
+                    &uniforms,
+                    &self.params,
+                )
+                .unwrap();
+            }
     }
 }
