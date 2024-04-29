@@ -1,4 +1,5 @@
 mod bezier;
+mod position;
 mod point;
 mod point_cloud;
 
@@ -6,11 +7,9 @@ use crate::point_cloud::PointCloud;
 use glium::{implement_vertex, Surface};
 use point::Points;
 
-type Position = [f32; 2];
-
 #[derive(Copy, Clone)]
 struct Vertex {
-    position: Position,
+    position: position::Position,
 }
 implement_vertex!(Vertex, position);
 
@@ -46,6 +45,10 @@ fn main() {
                     // TODO: Zoom in the camera appropriately so the original 800x480 fits the screen as closely
                     //       as possible
                     window_size = [new_size.width as f32, new_size.height as f32]
+                }
+                winit::event::WindowEvent::CursorMoved { position, .. } => {
+                    let position = [position.x as f32, position.y as f32];
+                    println!("{position:?}");
                 }
                 _ => (),
             },

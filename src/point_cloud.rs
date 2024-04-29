@@ -1,4 +1,4 @@
-use crate::{Position, Vertex};
+use crate::{position::Position, Vertex};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program, Surface, VertexBuffer
 };
@@ -21,6 +21,7 @@ impl<'a> PointCloud<'a> {
 
             void main() {
                 gl_Position = vec4(position * 2 / window_size - 1.0, 0.0, 1.0);
+                gl_Position.y = -gl_Position.y;
             }
         "#;
 

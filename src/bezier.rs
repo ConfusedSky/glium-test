@@ -1,4 +1,4 @@
-use crate::{Position, Vertex};
+use crate::{position::Position, Vertex};
 
 fn lerp(p1: Position, p2: Position, t: f64) -> Position {
     let x = p1[0] as f64 * (1. - t) + p2[0] as f64 * t;

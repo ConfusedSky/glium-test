@@ -1,4 +1,4 @@
-use crate::Position;
+use crate::position::Position;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
     Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer,
@@ -20,6 +20,8 @@ pub struct Points<'a> {
 }
 
 impl<'a> Points<'a> {
+    const SIZE: f32 = 15.0;
+
     pub fn new(display: &Display<WindowSurface>) -> Self {
         let points = vec![
             Vertex {
@@ -59,6 +61,7 @@ impl<'a> Points<'a> {
 
             void main() {
                 gl_Position = vec4((position * point_size / 2 + offset) * 2 / window_size - 1.0, 0.0, 1.0);
+                gl_Position.y = -gl_Position.y;
                 texcoord = uv;
             }
         "#;
@@ -101,13 +104,19 @@ impl<'a> Points<'a> {
         }
     }
 
+    pub fn hovered(&self, position: &Position) {
+        let size = Self::SIZE + 5.0;
+
+        for point in &self.points {
+        }
+    }
+
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
-        let size: f32 = 15.0;
         let color: [f32; 3] = [1.0, 0.0, 0.0];
 
         for offset in &self.points {
             let uniforms = dynamic_uniform! {
-                point_size: &size,
+                point_size: &Self::SIZE,
                 window_size: screen_size,
                 point_color: &color,
                 offset: offset,
