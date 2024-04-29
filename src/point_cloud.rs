@@ -1,6 +1,6 @@
-use crate::Vertex;
+use crate::{Position, Vertex};
 use glium::{
-    glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program, Surface, VertexBuffer,
+    dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program, Surface, VertexBuffer
 };
 
 pub struct PointCloud<'a> {
@@ -17,8 +17,10 @@ impl<'a> PointCloud<'a> {
 
             in vec2 position;
 
+            uniform vec2 window_size;
+
             void main() {
-                gl_Position = vec4(position, 0.0, 1.0);
+                gl_Position = vec4(position * 2 / window_size - 1.0, 0.0, 1.0);
             }
         "#;
 
@@ -47,13 +49,17 @@ impl<'a> PointCloud<'a> {
         }
     }
 
-    pub fn draw(&self, target: &mut Frame) {
+    pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
+        let uniforms = dynamic_uniform! {
+            window_size: screen_size,
+        };
+
         target
             .draw(
                 &self.buffer,
                 &glium::index::NoIndices(glium::index::PrimitiveType::Points),
                 &self.program,
-                &glium::uniforms::EmptyUniforms,
+                &uniforms,
                 &self.params,
             )
             .unwrap();

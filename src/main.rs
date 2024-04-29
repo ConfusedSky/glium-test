@@ -25,20 +25,17 @@ fn main() {
 
     #[rustfmt::skip]
     let control_positions = [
-        [-0.5, 0.0],
-        [-0.0, 0.9],
-        [0.0, -0.9],
-        [0.5, 0.0],
+        [200.0, 240.0],
+        [400.0, 456.0],
+        [400.0, 24.0],
+        [600.0, 240.0],
     ];
 
     let curve_points = bezier::generate_bezier_points(&control_positions);
     let curve_cloud = PointCloud::new(&display, &curve_points, 2.0);
 
     let mut control_points = Points::new(&display);
-    control_points.points = control_positions
-        .iter()
-        .map(|[x, y]| [x * window_size[0], y * window_size[1]])
-        .collect();
+    control_points.points = control_positions.into_iter().collect();
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -52,7 +49,7 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
-        curve_cloud.draw(&mut target);
+        curve_cloud.draw(&mut target, &window_size);
         control_points.draw(&mut target, &window_size);
 
         target.finish().unwrap();

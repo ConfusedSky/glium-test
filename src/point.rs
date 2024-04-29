@@ -58,7 +58,7 @@ impl<'a> Points<'a> {
             varying lowp vec2 texcoord;
 
             void main() {
-                gl_Position = vec4((position * point_size + offset) / window_size, 0.0, 1.0);
+                gl_Position = vec4((position * point_size / 2 + offset) * 2 / window_size - 1.0, 0.0, 1.0);
                 texcoord = uv;
             }
         "#;
