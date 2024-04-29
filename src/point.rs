@@ -11,12 +11,18 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, uv);
 
+struct Point {
+    position: Position,
+    hovered: bool,
+}
+
 pub struct Points<'a> {
     buffer: VertexBuffer<Vertex>,
     indicies: IndexBuffer<u16>,
     program: Program,
     params: DrawParameters<'a>,
-    points: Vec<Position>,
+    points: Vec<Point>,
+    positions: Vec<Position>,
 }
 
 impl<'a> Points<'a> {
@@ -101,38 +107,47 @@ impl<'a> Points<'a> {
             program,
             params,
             points: vec![],
+            positions: vec![],
         }
     }
 
     pub fn set_points(&mut self, points: &[Position]) {
-        points.clone_into(&mut self.points);
+        self.points = points
+            .iter()
+            .map(|x| Point {
+                position: *x,
+                hovered: false,
+            })
+            .collect();
     }
 
-    pub fn get_points(&self) -> &[Position] {
-        &self.points
+    pub fn get_points(&mut self) -> &[Position] {
+        self.positions = self.points.iter().map(|x| x.position).collect();
+        &self.positions
     }
 
-    pub fn hovered(&self, position: &Position) {
+    pub fn hovered(&mut self, position: &Position) {
         let size = Self::SIZE + 5.0;
         let size_squared = size.powi(2);
 
-        for point in &self.points {
-            let distance_squared = crate::position::distance_squared(position, point);
-            if distance_squared < size_squared {
-                println!("Hovered over: {point:?}");
-            }
+        for point in &mut self.points {
+            let point_position = &point.position;
+            let distance_squared = crate::position::distance_squared(point_position, position);
+
+            point.hovered = distance_squared < size_squared;
         }
     }
 
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
         let color: [f32; 3] = [1.0, 0.0, 0.0];
+        let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
 
-        for offset in &self.points {
+        for point in &self.points {
             let uniforms = dynamic_uniform! {
                 point_size: &Self::SIZE,
                 window_size: screen_size,
-                point_color: &color,
-                offset: offset,
+                point_color: if point.hovered { &hover_color } else { &color } ,
+                offset: &point.position,
             };
             target
                 .draw(
@@ -143,6 +158,6 @@ impl<'a> Points<'a> {
                     &self.params,
                 )
                 .unwrap();
-            }
+        }
     }
 }

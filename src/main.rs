@@ -22,7 +22,7 @@ fn main() {
     println!("{window_size:?}");
     let mut window_size = [window_size.width as f32, window_size.height as f32];
 
-    let control_points = {
+    let mut control_points = {
         #[rustfmt::skip]
         let control_positions = [
             [200.0, 240.0],
