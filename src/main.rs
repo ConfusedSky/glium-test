@@ -21,7 +21,7 @@ fn main() {
     let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
     let window_size = window.inner_size();
     println!("{window_size:?}");
-    let window_size = [window_size.width as f32, window_size.height as f32];
+    let mut window_size = [window_size.width as f32, window_size.height as f32];
 
     #[rustfmt::skip]
     let control_positions = [
@@ -41,6 +41,9 @@ fn main() {
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {
                 winit::event::WindowEvent::CloseRequested => window_target.exit(),
+                winit::event::WindowEvent::Resized(new_size) => {
+                    window_size = [new_size.width as f32, new_size.height as f32]
+                },
                 _ => (),
             },
             _ => (),
