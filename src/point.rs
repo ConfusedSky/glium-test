@@ -106,8 +106,13 @@ impl<'a> Points<'a> {
 
     pub fn hovered(&self, position: &Position) {
         let size = Self::SIZE + 5.0;
+        let size_squared = size.powi(2);
 
         for point in &self.points {
+            let distance_squared = crate::position::distance_squared(position, point);
+            if distance_squared < size_squared {
+                println!("Hovered over: {point:?}");
+            }
         }
     }
 

@@ -48,7 +48,7 @@ fn main() {
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32];
-                    println!("{position:?}");
+                    control_points.hovered(&position);
                 }
                 _ => (),
             },
