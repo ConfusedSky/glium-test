@@ -22,19 +22,23 @@ fn main() {
     println!("{window_size:?}");
     let mut window_size = [window_size.width as f32, window_size.height as f32];
 
-    #[rustfmt::skip]
-    let control_positions = [
-        [200.0, 240.0],
-        [400.0, 456.0],
-        [400.0, 24.0],
-        [600.0, 240.0],
-    ];
+    let control_points = {
+        #[rustfmt::skip]
+        let control_positions = [
+            [200.0, 240.0],
+            [400.0, 456.0],
+            [400.0, 24.0],
+            [600.0, 240.0],
+        ];
 
-    let curve_points = bezier::generate_bezier_points(&control_positions);
+        let mut control_points = Points::new(&display);
+        control_points.set_points(&control_positions);
+
+        control_points
+    };
+
+    let curve_points = bezier::generate_bezier_points(control_points.get_points());
     let curve_cloud = PointCloud::new(&display, &curve_points, 2.0);
-
-    let mut control_points = Points::new(&display);
-    control_points.points = control_positions.into_iter().collect();
 
     let _ = event_loop.run(move |event, window_target| {
         match event {

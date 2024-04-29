@@ -16,7 +16,7 @@ pub struct Points<'a> {
     indicies: IndexBuffer<u16>,
     program: Program,
     params: DrawParameters<'a>,
-    pub points: Vec<Position>,
+    points: Vec<Position>,
 }
 
 impl<'a> Points<'a> {
@@ -102,6 +102,14 @@ impl<'a> Points<'a> {
             params,
             points: vec![],
         }
+    }
+
+    pub fn set_points(&mut self, points: &[Position]) {
+        points.clone_into(&mut self.points);
+    }
+
+    pub fn get_points(&self) -> &[Position] {
+        &self.points
     }
 
     pub fn hovered(&self, position: &Position) {

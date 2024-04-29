@@ -15,7 +15,7 @@ fn bezier(p1: Position, p2: Position, p3: Position, p4: Position, t: f64) -> Pos
     lerp(d, e, t)
 }
 
-pub fn generate_bezier_points(control_points: &[[f32; 2]; 4]) -> Vec<Vertex> {
+pub fn generate_bezier_points(control_points: &[[f32; 2]]) -> Vec<Vertex> {
     let subdivisions = 60;
     let mut shape_points = Vec::with_capacity(subdivisions);
 
