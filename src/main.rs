@@ -42,8 +42,11 @@ fn main() {
             winit::event::Event::WindowEvent { event, .. } => match event {
                 winit::event::WindowEvent::CloseRequested => window_target.exit(),
                 winit::event::WindowEvent::Resized(new_size) => {
+                    // TODO: Make the it render the original 800x480 in centered
+                    // TODO: Zoom in the camera appropriately so the original 800x480 fits the screen as closely
+                    //       as possible
                     window_size = [new_size.width as f32, new_size.height as f32]
-                },
+                }
                 _ => (),
             },
             _ => (),
