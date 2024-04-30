@@ -53,15 +53,14 @@ fn main() {
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32];
-                    control_points.hovered(&position);
+                    control_points.mouse_moved(&position);
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
                     if button == MouseButton::Left {
                         if state.is_pressed() {
                             control_points.click();
-                            println!("Mouse Clicked");
                         } else {
-                            println!("Mouse Released");
+                            control_points.release();
                         }
                     }
                 }

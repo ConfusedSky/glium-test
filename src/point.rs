@@ -28,6 +28,9 @@ pub struct Points<'a> {
     // Point objects for each point to render
     points: Vec<Point>,
 
+    // Index into the points vector that contains the held point
+    held_point: Option<usize>,
+
     // This is just a buffer that is used when calling get_points
     // Should not be used for anything else
     positions: Vec<Position>,
@@ -116,10 +119,13 @@ impl<'a> Points<'a> {
             params,
             points: vec![],
             positions: vec![],
+            held_point: None,
         }
     }
 
     pub fn set_points(&mut self, points: &[Position]) {
+        // Points are reset so the held point no longer makes any sense
+        self.held_point = None;
         self.points = points
             .iter()
             .map(|x| Point {
@@ -134,9 +140,14 @@ impl<'a> Points<'a> {
         &self.positions
     }
 
-    pub fn hovered(&mut self, position: &Position) {
+    pub fn mouse_moved(&mut self, position: &Position) {
         let size = Self::SIZE + 5.0;
         let size_squared = size.powi(2);
+
+        if let Some(point) = self.held_point {
+            let point = &mut self.points[point];
+            point.position = *position;
+        }
 
         for point in &mut self.points {
             let point_position = &point.position;
@@ -146,12 +157,17 @@ impl<'a> Points<'a> {
         }
     }
 
-    pub fn click(&self) {
-        let point = self.points.iter().find(|x| x.hovered);
+    pub fn click(&mut self) {
+        self.held_point = self.points.iter().position(|x| x.hovered);
 
-        if let Some(point) = point {
+        if let Some(point) = self.held_point {
+            let point = &self.points[point];
             println!("Clicked point at {:?}", point.position);
         }
+    }
+
+    pub fn release(&mut self) {
+        self.held_point = None;
     }
 
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
