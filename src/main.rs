@@ -1,11 +1,12 @@
 mod bezier;
-mod position;
 mod point;
 mod point_cloud;
+mod position;
 
 use crate::point_cloud::PointCloud;
 use glium::{implement_vertex, Surface};
 use point::Points;
+use winit::event::MouseButton;
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -53,6 +54,16 @@ fn main() {
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32];
                     control_points.hovered(&position);
+                }
+                winit::event::WindowEvent::MouseInput { state, button, .. } => {
+                    if button == MouseButton::Left {
+                        if state.is_pressed() {
+                            control_points.click();
+                            println!("Mouse Clicked");
+                        } else {
+                            println!("Mouse Released");
+                        }
+                    }
                 }
                 _ => (),
             },

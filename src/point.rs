@@ -17,11 +17,19 @@ struct Point {
 }
 
 pub struct Points<'a> {
+    // Quad buffer for rendering points
     buffer: VertexBuffer<Vertex>,
+    // Indicies of the quad buffer
     indicies: IndexBuffer<u16>,
+    // Program that renders a circle on a quad mesh
     program: Program,
+    // This is here so we properly set alpha blending
     params: DrawParameters<'a>,
+    // Point objects for each point to render
     points: Vec<Point>,
+
+    // This is just a buffer that is used when calling get_points
+    // Should not be used for anything else
     positions: Vec<Position>,
 }
 
@@ -135,6 +143,14 @@ impl<'a> Points<'a> {
             let distance_squared = crate::position::distance_squared(point_position, position);
 
             point.hovered = distance_squared < size_squared;
+        }
+    }
+
+    pub fn click(&self) {
+        let point = self.points.iter().find(|x| x.hovered);
+
+        if let Some(point) = point {
+            println!("Clicked point at {:?}", point.position);
         }
     }
 
