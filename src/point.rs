@@ -140,17 +140,9 @@ impl<'a> Points<'a> {
         &self.positions
     }
 
-    pub fn mouse_moved(&mut self, position: &Position, previous_position: &Option<Position>) {
+    pub fn mouse_moved(&mut self, position: &Position, previous_position: &Option<Position>) -> bool {
         let size = Self::SIZE + 5.0;
         let size_squared = size.powi(2);
-
-        if let Some(point) = self.held_point {
-            let point = &mut self.points[point];
-            if let Some(previous_position) = previous_position {
-                let difference = position::difference(position, previous_position);
-                point.position = position::sum(&point.position, &difference);
-            }
-        }
 
         for point in &mut self.points {
             let point_position = &point.position;
@@ -158,15 +150,21 @@ impl<'a> Points<'a> {
 
             point.hovered = distance_squared < size_squared;
         }
+
+        if let Some(point) = self.held_point {
+            let point = &mut self.points[point];
+            if let Some(previous_position) = previous_position {
+                let difference = position::difference(position, previous_position);
+                point.position = position::sum(&point.position, &difference);
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn click(&mut self) {
         self.held_point = self.points.iter().position(|x| x.hovered);
-
-        if let Some(point) = self.held_point {
-            let point = &self.points[point];
-            println!("Clicked point at {:?}", point.position);
-        }
     }
 
     pub fn release(&mut self) {
