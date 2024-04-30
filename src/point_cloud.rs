@@ -40,6 +40,7 @@ impl<'a> PointCloud<'a> {
 
         let params = DrawParameters {
             point_size: Some(size),
+            line_width: Some(size),
             ..Default::default()
         };
 
@@ -58,7 +59,7 @@ impl<'a> PointCloud<'a> {
         target
             .draw(
                 &self.buffer,
-                &glium::index::NoIndices(glium::index::PrimitiveType::Points),
+                &glium::index::NoIndices(glium::index::PrimitiveType::LineStrip),
                 &self.program,
                 &uniforms,
                 &self.params,
