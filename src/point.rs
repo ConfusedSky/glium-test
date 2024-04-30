@@ -1,4 +1,4 @@
-use crate::position::Position;
+use crate::position::{self, Position};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
     Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer,
@@ -140,18 +140,21 @@ impl<'a> Points<'a> {
         &self.positions
     }
 
-    pub fn mouse_moved(&mut self, position: &Position) {
+    pub fn mouse_moved(&mut self, position: &Position, previous_position: &Option<Position>) {
         let size = Self::SIZE + 5.0;
         let size_squared = size.powi(2);
 
         if let Some(point) = self.held_point {
             let point = &mut self.points[point];
-            point.position = *position;
+            if let Some(previous_position) = previous_position {
+                let difference = position::difference(position, previous_position);
+                point.position = position::sum(&point.position, &difference);
+            }
         }
 
         for point in &mut self.points {
             let point_position = &point.position;
-            let distance_squared = crate::position::distance_squared(point_position, position);
+            let distance_squared = position::distance_squared(point_position, position);
 
             point.hovered = distance_squared < size_squared;
         }

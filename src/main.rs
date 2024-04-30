@@ -40,6 +40,7 @@ fn main() {
 
     let curve_points = bezier::generate_bezier_points(control_points.get_points());
     let curve_cloud = PointCloud::new(&display, &curve_points, 2.0);
+    let mut previous_position = None;
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -53,7 +54,9 @@ fn main() {
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32];
-                    control_points.mouse_moved(&position);
+                    control_points.mouse_moved(&position, &previous_position);
+
+                    previous_position = Some(position);
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
                     if button == MouseButton::Left {
