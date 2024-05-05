@@ -90,15 +90,15 @@ impl<'a> Points<'a> {
 
             varying lowp vec2 texcoord;
 
-            float circle(in vec2 _st, in float _radius){
+            float circle(in vec2 _st, in float _radius, in float edge){
                 vec2 dist = _st-vec2(0.5);
-                return 1.-smoothstep(_radius-(_radius*0.01),
-                                    _radius+(_radius*0.01),
+                return 1.-smoothstep(_radius-(_radius*edge),
+                                    _radius+(_radius*edge),
                                     dot(dist,dist)*4.0);
             }
 
             void main() {
-                float a = circle(texcoord, 1);
+                float a = circle(texcoord, .9, 0.02);
                 color = vec4(point_color, a);
             }
         "#;

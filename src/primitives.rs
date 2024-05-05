@@ -52,9 +52,15 @@ impl<'a> Primitives<'a> {
             }
         "#;
 
-        let program =
-            glium::Program::from_source(display, vertex_shader_src, fragment_shader_src, None)
-                .unwrap();
+        let source = glium::program::SourceCode {
+            vertex_shader: vertex_shader_src,
+            fragment_shader: fragment_shader_src,
+            geometry_shader: None,
+            tessellation_control_shader: None,
+            tessellation_evaluation_shader: None,
+        };
+
+        let program = glium::Program::new(display, source).unwrap();
 
         let params = DrawParameters {
             point_size: Some(size),
