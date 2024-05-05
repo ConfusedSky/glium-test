@@ -3,14 +3,32 @@ use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program, Surface, VertexBuffer
 };
 
-pub struct PointCloud<'a> {
+#[derive(Clone, Copy)]
+pub enum PrimitiveType {
+    Point,
+    Line,
+    LineStrip,
+}
+
+impl From<PrimitiveType> for glium::index::PrimitiveType {
+    fn from(value: PrimitiveType) -> Self {
+        match value {
+            PrimitiveType::Point => Self::Points,
+            PrimitiveType::Line => Self::LinesList,
+            PrimitiveType::LineStrip => Self::LineStrip,
+        }
+    }
+}
+
+pub struct Primitives<'a> {
     buffer: VertexBuffer<Vertex>,
     program: Program,
     params: DrawParameters<'a>,
+    primitive_type: PrimitiveType,
 }
 
-impl<'a> PointCloud<'a> {
-    pub fn new(display: &Display<WindowSurface>, points: &[Vertex], size: f32) -> Self {
+impl<'a> Primitives<'a> {
+    pub fn new(display: &Display<WindowSurface>, points: &[Vertex], primitive_type: PrimitiveType, size: f32) -> Self {
         let buffer = glium::VertexBuffer::new(display, &points).unwrap();
 
         let vertex_shader_src = r#"#version 400
@@ -48,6 +66,7 @@ impl<'a> PointCloud<'a> {
             buffer,
             program,
             params,
+            primitive_type,
         }
     }
 
@@ -59,7 +78,7 @@ impl<'a> PointCloud<'a> {
         target
             .draw(
                 &self.buffer,
-                &glium::index::NoIndices(glium::index::PrimitiveType::LineStrip),
+                &glium::index::NoIndices(self.primitive_type.into()),
                 &self.program,
                 &uniforms,
                 &self.params,
