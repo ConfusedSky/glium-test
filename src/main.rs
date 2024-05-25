@@ -1,7 +1,7 @@
 mod bezier;
 mod point;
-mod primitives;
 mod position;
+mod primitives;
 
 use crate::primitives::Primitives;
 use glium::{implement_vertex, Surface};
@@ -39,8 +39,21 @@ fn main() {
     };
 
     let curve_points = bezier::generate_bezier_points(control_points.get_points());
-    let mut curve_cloud = Primitives::new(&display, &curve_points, primitives::PrimitiveType::LineStrip, 2.0);
+    let mut curve_cloud = Primitives::new(
+        &display,
+        &curve_points,
+        primitives::PrimitiveType::LineStrip,
+        2.0,
+    );
     let mut previous_position = None;
+
+    let line_points: Vec<Vertex> = control_points
+        .get_points()
+        .into_iter()
+        .map(|x| Vertex { position: *x })
+        .collect();
+    // Todo style this better
+    let mut lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -55,8 +68,21 @@ fn main() {
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32];
                     if control_points.mouse_moved(&position, &previous_position) {
-                        let curve_points = bezier::generate_bezier_points(control_points.get_points());
-                        curve_cloud = Primitives::new(&display, &curve_points, primitives::PrimitiveType::LineStrip, 2.0);
+                        let curve_points =
+                            bezier::generate_bezier_points(control_points.get_points());
+                        curve_cloud = Primitives::new(
+                            &display,
+                            &curve_points,
+                            primitives::PrimitiveType::LineStrip,
+                            2.0,
+                        );
+
+                        let line_points: Vec<Vertex> = control_points
+                            .get_points()
+                            .into_iter()
+                            .map(|x| Vertex { position: *x })
+                            .collect();
+                        lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
                     }
 
                     previous_position = Some(position);
@@ -78,6 +104,7 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
+        lines.draw(&mut target, &window_size);
         curve_cloud.draw(&mut target, &window_size);
         control_points.draw(&mut target, &window_size);
 
