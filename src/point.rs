@@ -1,4 +1,4 @@
-use crate::position::{self, Position};
+use crate::position::Position;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
     Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer,
@@ -6,15 +6,15 @@ use glium::{
 
 #[derive(Clone, Copy)]
 struct Vertex {
-    position: Position,
-    uv: Position,
+    position: [f32; 2],
+    uv: [f32; 2],
 }
 implement_vertex!(Vertex, position, uv);
 
 struct Point {
     position: Position,
     hovered: bool,
-    attached_point: Option<usize>
+    attached_point: Option<usize>,
 }
 
 pub struct Points<'a> {
@@ -149,13 +149,17 @@ impl<'a> Points<'a> {
         &self.positions
     }
 
-    pub fn mouse_moved(&mut self, position: &Position, previous_position: &Option<Position>) -> bool {
+    pub fn mouse_moved(
+        &mut self,
+        position: &Position,
+        previous_position: &Option<Position>,
+    ) -> bool {
         let size = Self::SIZE + 5.0;
         let size_squared = size.powi(2);
 
         for point in &mut self.points {
             let point_position = &point.position;
-            let distance_squared = position::distance_squared(point_position, position);
+            let distance_squared = point_position.distance_squared(position);
 
             point.hovered = distance_squared < size_squared;
         }
@@ -163,12 +167,12 @@ impl<'a> Points<'a> {
         if let Some(point) = self.held_point {
             let point = &mut self.points[point];
             if let Some(previous_position) = previous_position {
-                let difference = position::difference(position, previous_position);
-                point.position = position::sum(&point.position, &difference);
+                let difference = *position - *previous_position;
+                point.position = point.position + difference;
 
                 if let Some(attached) = point.attached_point {
                     let attached = &mut self.points[attached];
-                    attached.position = position::sum(&attached.position, &difference);
+                    attached.position = attached.position + difference;
                 }
 
                 return true;
@@ -193,9 +197,9 @@ impl<'a> Points<'a> {
         for point in &self.points {
             let uniforms = dynamic_uniform! {
                 point_size: &Self::SIZE,
-                window_size: screen_size,
+                window_size: &screen_size.0,
                 point_color: if point.hovered { &hover_color } else { &color } ,
-                offset: &point.position,
+                offset: &point.position.0,
             };
             target
                 .draw(

@@ -78,7 +78,7 @@ impl<'a> Primitives<'a> {
 
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
         let uniforms = dynamic_uniform! {
-            window_size: screen_size,
+            window_size: &screen_size.0,
         };
 
         target

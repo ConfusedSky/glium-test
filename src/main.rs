@@ -3,14 +3,14 @@ mod point;
 mod position;
 mod primitives;
 
-use crate::primitives::Primitives;
+use crate::{position::Position, primitives::Primitives};
 use glium::{implement_vertex, Surface};
 use point::Points;
 use winit::event::MouseButton;
 
 #[derive(Copy, Clone)]
 struct Vertex {
-    position: position::Position,
+    position: [f32; 2],
 }
 implement_vertex!(Vertex, position);
 
@@ -21,16 +21,16 @@ fn main() {
     let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
     let window_size = window.inner_size();
     println!("{window_size:?}");
-    let mut window_size = [window_size.width as f32, window_size.height as f32];
+    let mut window_size = Position([window_size.width as f32, window_size.height as f32]);
 
     let mut control_points = {
         #[rustfmt::skip]
-        let control_positions = [
+        let control_positions: Vec<_> = [
             [200.0, 240.0],
             [400.0, 456.0],
             [400.0, 24.0],
             [600.0, 240.0],
-        ];
+        ].into_iter().map(Position).collect();
 
         let mut control_points = Points::new(&display);
         control_points.set_points(&control_positions);
@@ -50,7 +50,7 @@ fn main() {
     let line_points: Vec<Vertex> = control_points
         .get_points()
         .into_iter()
-        .map(|x| Vertex { position: *x })
+        .map(|x| Vertex { position: x.0 })
         .collect();
     // Todo style this better
     let mut lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
@@ -63,10 +63,10 @@ fn main() {
                     // TODO: Make the it render the original 800x480 in centered
                     // TODO: Zoom in the camera appropriately so the original 800x480 fits the screen as closely
                     //       as possible
-                    window_size = [new_size.width as f32, new_size.height as f32]
+                    window_size = Position([new_size.width as f32, new_size.height as f32])
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
-                    let position = [position.x as f32, position.y as f32];
+                    let position = Position([position.x as f32, position.y as f32]);
                     if control_points.mouse_moved(&position, &previous_position) {
                         let curve_points =
                             bezier::generate_bezier_points(control_points.get_points());
@@ -80,7 +80,7 @@ fn main() {
                         let line_points: Vec<Vertex> = control_points
                             .get_points()
                             .into_iter()
-                            .map(|x| Vertex { position: *x })
+                            .map(|x| Vertex { position: x.0 })
                             .collect();
                         lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
                     }

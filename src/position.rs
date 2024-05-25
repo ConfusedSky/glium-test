@@ -1,21 +1,34 @@
-pub type Position = [f32; 2];
+use core::ops::{Add, Sub};
 
-pub fn distance_squared(a: &Position, b: &Position) -> f32 {
-    let [x, y] = difference(b, a);
+#[derive(Clone, Copy)]
+pub struct Position(pub [f32; 2]);
 
-    x.powi(2) + y.powi(2)
+impl Position {
+    pub fn distance_squared(&self, other: &Position) -> f32 {
+        let [x, y] = (*other - *self).0;
+
+        x.powi(2) + y.powi(2)
+    }
 }
 
-pub fn sum(a: &Position, b: &Position) -> Position {
-    let x = a[0] + b[0];
-    let y = a[1] + b[1];
+impl Add<Position> for Position {
+    type Output = Position;
 
-    [x, y]
+    fn add(self, rhs: Position) -> Self::Output {
+        let x = self.0[0] + rhs.0[0];
+        let y = self.0[1] + rhs.0[1];
+
+        Self([x, y])
+    }
 }
 
-pub fn difference(a: &Position, b: &Position) -> Position {
-    let x = a[0] - b[0];
-    let y = a[1] - b[1];
+impl Sub<Position> for Position {
+    type Output = Position;
 
-    [x, y]
+    fn sub(self, rhs: Position) -> Self::Output {
+        let x = self.0[0] - rhs.0[0];
+        let y = self.0[1] - rhs.0[1];
+
+        Self([x, y])
+    }
 }
