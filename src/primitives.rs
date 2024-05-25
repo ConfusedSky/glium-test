@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crate::{position::Position, Vertex};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program,
@@ -85,8 +83,9 @@ impl<'a> Primitives<'a> {
     }
 
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
+        let window_size: [f32; 2] = (*screen_size).into();
         let uniforms = dynamic_uniform! {
-            window_size: screen_size.deref(),
+            window_size: &window_size,
         };
 
         target

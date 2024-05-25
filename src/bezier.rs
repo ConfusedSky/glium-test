@@ -22,7 +22,7 @@ pub fn generate_bezier_points(control_points: &[Position]) -> Vec<Vertex> {
             control_points[3],
             t,
         );
-        shape_points.push(Vertex { position: *point });
+        shape_points.push(Vertex { position: point.into() });
     }
 
     shape_points

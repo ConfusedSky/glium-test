@@ -50,7 +50,7 @@ fn main() {
     let line_points: Vec<Vertex> = control_points
         .get_points()
         .into_iter()
-        .map(|x| Vertex { position: **x })
+        .map(|x| Vertex { position: (*x).into() })
         .collect();
     // Todo style this better
     let mut lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
@@ -80,7 +80,7 @@ fn main() {
                         let line_points: Vec<Vertex> = control_points
                             .get_points()
                             .into_iter()
-                            .map(|x| Vertex { position: **x })
+                            .map(|x| Vertex { position: (*x).into() })
                             .collect();
                         lines = Primitives::new(
                             &display,
