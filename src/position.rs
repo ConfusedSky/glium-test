@@ -1,5 +1,7 @@
 use core::ops::{Add, Sub};
 
+use glium::uniforms::AsUniformValue;
+
 #[derive(Clone, Copy)]
 pub struct Position([f32; 2]);
 
@@ -56,5 +58,11 @@ impl From<[f32; 2]> for Position {
 impl From<Position> for [f32; 2] {
     fn from(value: Position) -> Self {
         value.0
+    }
+}
+
+impl AsUniformValue for Position {
+    fn as_uniform_value(&self) -> glium::uniforms::UniformValue<'_> {
+        glium::uniforms::UniformValue::Vec2(self.0)
     }
 }
