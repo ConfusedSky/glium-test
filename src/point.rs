@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::position::Position;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
@@ -197,9 +199,9 @@ impl<'a> Points<'a> {
         for point in &self.points {
             let uniforms = dynamic_uniform! {
                 point_size: &Self::SIZE,
-                window_size: &screen_size.0,
+                window_size: screen_size.deref(),
                 point_color: if point.hovered { &hover_color } else { &color } ,
-                offset: &point.position.0,
+                offset: point.position.deref(),
             };
             target
                 .draw(

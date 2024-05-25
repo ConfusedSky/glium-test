@@ -1,6 +1,9 @@
+use std::ops::Deref;
+
 use crate::{position::Position, Vertex};
 use glium::{
-    dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program, Surface, VertexBuffer
+    dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program,
+    Surface, VertexBuffer,
 };
 
 #[derive(Clone, Copy)]
@@ -28,7 +31,12 @@ pub struct Primitives<'a> {
 }
 
 impl<'a> Primitives<'a> {
-    pub fn new(display: &Display<WindowSurface>, points: &[Vertex], primitive_type: PrimitiveType, size: f32) -> Self {
+    pub fn new(
+        display: &Display<WindowSurface>,
+        points: &[Vertex],
+        primitive_type: PrimitiveType,
+        size: f32,
+    ) -> Self {
         let buffer = glium::VertexBuffer::new(display, &points).unwrap();
 
         let vertex_shader_src = r#"#version 400
@@ -78,7 +86,7 @@ impl<'a> Primitives<'a> {
 
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
         let uniforms = dynamic_uniform! {
-            window_size: &screen_size.0,
+            window_size: screen_size.deref(),
         };
 
         target
