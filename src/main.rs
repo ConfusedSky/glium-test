@@ -14,32 +14,6 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position);
 
-fn on_update_points<'a>(
-    display: &glium::Display<glium::glutin::surface::WindowSurface>,
-    control_points: &mut Points,
-) -> (Primitives<'a>, Primitives<'a>) {
-    let control_points = control_points.get_points();
-
-    let curve_points = bezier::generate_bezier_points(control_points);
-    let curve_cloud = Primitives::new(
-        &display,
-        &curve_points,
-        primitives::PrimitiveType::LineStrip,
-        2.0,
-    );
-
-    let line_points: Vec<Vertex> = control_points
-        .into_iter()
-        .map(|x| Vertex {
-            position: (*x).into(),
-        })
-        .collect();
-    // Todo style this better
-    let lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
-
-    (lines, curve_cloud)
-}
-
 fn main() {
     let event_loop = winit::event_loop::EventLoopBuilder::new()
         .build()
@@ -58,7 +32,7 @@ fn main() {
             [600.0, 240.0],
         ].into_iter().map(Into::into).collect();
 
-        let mut control_points = Points::new(&display);
+        let mut control_points = Points::new(&display, None);
         control_points.set_points(&control_positions);
 
         control_points
@@ -66,7 +40,28 @@ fn main() {
 
     let mut previous_position = None;
 
-    let (mut lines, mut curve_cloud) = on_update_points(&display, &mut control_points);
+    let (mut curve_cloud, mut lines) = {
+        let control_points = control_points.get_points();
+
+        let curve_points = bezier::generate_bezier_points(control_points);
+        let curve_cloud = Primitives::new(
+            &display,
+            &curve_points,
+            primitives::PrimitiveType::LineStrip,
+            2.0,
+        );
+
+        let line_points: Vec<Vertex> = control_points
+            .into_iter()
+            .map(|x| Vertex {
+                position: (*x).into(),
+            })
+            .collect();
+        // Todo style this better
+        let lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
+
+        (curve_cloud, lines)
+    };
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -81,7 +76,18 @@ fn main() {
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32].into();
                     if control_points.mouse_moved(&position, &previous_position) {
-                        (curve_cloud, lines) = on_update_points(&display, &mut control_points);
+                        let control_points = control_points.get_points();
+
+                        let curve_points = bezier::generate_bezier_points(control_points);
+                        curve_cloud.set_points(&display, &curve_points);
+
+                        let line_points: Vec<Vertex> = control_points
+                            .into_iter()
+                            .map(|x| Vertex {
+                                position: (*x).into(),
+                            })
+                            .collect();
+                        lines.set_points(&display, &line_points);
                     }
 
                     previous_position = Some(position);

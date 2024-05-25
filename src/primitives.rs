@@ -82,6 +82,10 @@ impl<'a> Primitives<'a> {
         }
     }
 
+    pub fn set_points(&mut self, display: &Display<WindowSurface>, points: &[Vertex]) {
+        self.buffer = glium::VertexBuffer::new(display, &points).unwrap();
+    }
+
     pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
         let uniforms = dynamic_uniform! {
             window_size: screen_size,

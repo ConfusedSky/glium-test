@@ -28,6 +28,8 @@ pub struct Points<'a> {
     params: DrawParameters<'a>,
     /// Point objects for each point to render
     points: Vec<Point>,
+    /// Size for each point
+    point_size: f32,
 
     /// Index into the points vector that contains the held point
     held_point: Option<usize>,
@@ -38,9 +40,9 @@ pub struct Points<'a> {
 }
 
 impl<'a> Points<'a> {
-    const SIZE: f32 = 15.0;
+    const DEFAULT_SIZE: f32 = 15.0;
 
-    pub fn new(display: &Display<WindowSurface>) -> Self {
+    pub fn new(display: &Display<WindowSurface>, size: Option<f32>) -> Self {
         let points = vec![
             Vertex {
                 position: [-1.0, -1.0],
@@ -118,6 +120,7 @@ impl<'a> Points<'a> {
             indicies: index_buffer,
             program,
             params,
+            point_size: size.unwrap_or(Self::DEFAULT_SIZE),
             points: vec![],
             positions: vec![],
             held_point: None,
@@ -154,7 +157,7 @@ impl<'a> Points<'a> {
         position: &Position,
         previous_position: &Option<Position>,
     ) -> bool {
-        let size = Self::SIZE + 5.0;
+        let size = Self::DEFAULT_SIZE + 5.0;
         let size_squared = size.powi(2);
 
         for point in &mut self.points {
@@ -196,7 +199,7 @@ impl<'a> Points<'a> {
 
         for point in &self.points {
             let uniforms = dynamic_uniform! {
-                point_size: &Self::SIZE,
+                point_size: &self.point_size,
                 window_size: screen_size,
                 point_color: if point.hovered { &hover_color } else { &color } ,
                 offset: &point.position,
