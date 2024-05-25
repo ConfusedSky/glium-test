@@ -18,22 +18,22 @@ struct Point {
 }
 
 pub struct Points<'a> {
-    // Quad buffer for rendering points
+    /// Quad buffer for rendering points
     buffer: VertexBuffer<Vertex>,
-    // Indicies of the quad buffer
+    /// Indicies of the quad buffer
     indicies: IndexBuffer<u16>,
-    // Program that renders a circle on a quad mesh
+    /// Program that renders a circle on a quad mesh
     program: Program,
-    // This is here so we properly set alpha blending
+    /// This is here so we properly set alpha blending
     params: DrawParameters<'a>,
-    // Point objects for each point to render
+    /// Point objects for each point to render
     points: Vec<Point>,
 
-    // Index into the points vector that contains the held point
+    /// Index into the points vector that contains the held point
     held_point: Option<usize>,
 
-    // This is just a buffer that is used when calling get_points
-    // Should not be used for anything else
+    /// This is just a buffer that is used when calling get_points
+    /// Should not be used for anything else
     positions: Vec<Position>,
 }
 
