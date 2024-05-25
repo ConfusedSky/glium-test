@@ -3,6 +3,8 @@ mod point;
 mod position;
 mod primitives;
 
+use std::time::SystemTime;
+
 use crate::primitives::Primitives;
 use glium::{implement_vertex, Surface};
 use point::Points;
@@ -18,6 +20,7 @@ fn main() {
     let event_loop = winit::event_loop::EventLoopBuilder::new()
         .build()
         .expect("event loop building");
+    event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
     let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
     let window_size = window.inner_size();
     println!("{window_size:?}");
@@ -37,6 +40,7 @@ fn main() {
 
         control_points
     };
+    let mut follow_points = Points::new(&display, Some(10.0));
 
     let mut previous_position = None;
 
@@ -62,6 +66,8 @@ fn main() {
 
         (curve_cloud, lines)
     };
+
+    let timer = SystemTime::now();
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -106,10 +112,19 @@ fn main() {
             _ => (),
         };
 
+        let elapsed = timer.elapsed().unwrap().as_secs_f64() / 4.0;
+        let p = bezier::generate_bezier_points_with_offset(
+            control_points.get_points(),
+            Some(5),
+            Some(elapsed),
+        );
+        follow_points.set_points(&p);
+
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
         lines.draw(&mut target, &window_size);
+        follow_points.draw(&mut target, &window_size);
         curve_cloud.draw(&mut target, &window_size);
         control_points.draw(&mut target, &window_size);
 
