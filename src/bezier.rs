@@ -1,18 +1,12 @@
 use crate::{position::Position, Vertex};
 
-fn lerp(p1: Position, p2: Position, t: f64) -> Position {
-    let x = p1[0] as f64 * (1. - t) + p2[0] as f64 * t;
-    let y = p1[1] as f64 * (1. - t) + p2[1] as f64 * t;
-    [x as f32, y as f32].into()
-}
-
 fn bezier(p1: Position, p2: Position, p3: Position, p4: Position, t: f64) -> Position {
-    let a = lerp(p1, p2, t);
-    let b = lerp(p2, p3, t);
-    let c = lerp(p3, p4, t);
-    let d = lerp(a, b, t);
-    let e = lerp(b, c, t);
-    lerp(d, e, t)
+    let a = Position::lerp(p1, p2, t);
+    let b = Position::lerp(p2, p3, t);
+    let c = Position::lerp(p3, p4, t);
+    let d = Position::lerp(a, b, t);
+    let e = Position::lerp(b, c, t);
+    Position::lerp(d, e, t)
 }
 
 pub fn generate_bezier_points(control_points: &[Position]) -> Vec<Vertex> {

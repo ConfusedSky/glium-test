@@ -10,6 +10,12 @@ impl Position {
 
         x.powi(2) + y.powi(2)
     }
+    
+    pub fn lerp(this: Self, other: Self, t: f64) -> Self {
+        let x = this.0[0] as f64 * (1. - t) + other.0[0] as f64 * t;
+        let y = this.0[1] as f64 * (1. - t) + other.0[1] as f64 * t;
+        [x as f32, y as f32].into()
+    }
 }
 
 impl Add<Position> for Position {
