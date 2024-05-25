@@ -14,6 +14,7 @@ implement_vertex!(Vertex, position, uv);
 struct Point {
     position: Position,
     hovered: bool,
+    attached_point: Option<usize>
 }
 
 pub struct Points<'a> {
@@ -128,9 +129,17 @@ impl<'a> Points<'a> {
         self.held_point = None;
         self.points = points
             .iter()
-            .map(|x| Point {
+            .enumerate()
+            .map(|(i, x)| Point {
                 position: *x,
                 hovered: false,
+                attached_point: {
+                    match i {
+                        0 => Some(1),
+                        3 => Some(2),
+                        _ => None,
+                    }
+                },
             })
             .collect();
     }
@@ -156,6 +165,12 @@ impl<'a> Points<'a> {
             if let Some(previous_position) = previous_position {
                 let difference = position::difference(position, previous_position);
                 point.position = position::sum(&point.position, &difference);
+
+                if let Some(attached) = point.attached_point {
+                    let attached = &mut self.points[attached];
+                    attached.position = position::sum(&attached.position, &difference);
+                }
+
                 return true;
             }
         }
