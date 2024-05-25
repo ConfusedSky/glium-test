@@ -39,7 +39,7 @@ fn main() {
     };
 
     let curve_points = bezier::generate_bezier_points(control_points.get_points());
-    let mut curve_cloud = Primitives::new(&display, &curve_points, primitives::PrimitiveType::Point, 2.0);
+    let mut curve_cloud = Primitives::new(&display, &curve_points, primitives::PrimitiveType::LineStrip, 2.0);
     let mut previous_position = None;
 
     let _ = event_loop.run(move |event, window_target| {
@@ -56,7 +56,7 @@ fn main() {
                     let position = [position.x as f32, position.y as f32];
                     if control_points.mouse_moved(&position, &previous_position) {
                         let curve_points = bezier::generate_bezier_points(control_points.get_points());
-                        curve_cloud = Primitives::new(&display, &curve_points, primitives::PrimitiveType::Point, 2.0);
+                        curve_cloud = Primitives::new(&display, &curve_points, primitives::PrimitiveType::LineStrip, 2.0);
                     }
 
                     previous_position = Some(position);
