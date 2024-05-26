@@ -77,9 +77,7 @@ pub fn mouse_moved(
             // mouse is now hovered, otherwise if the component
             // is hovered it should no longer be hovered
             if distance_squared < radius_squared {
-                commands
-                    .entity(entity)
-                    .insert(Hovered::default());
+                commands.entity(entity).insert(Hovered::default());
 
                 // If there is a connected entity also set hovered on that element as well
                 if let Some(Connection(other)) = connection {

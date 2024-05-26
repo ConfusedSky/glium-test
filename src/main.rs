@@ -1,5 +1,4 @@
 mod bezier;
-mod control_points;
 mod mouse;
 mod point;
 mod position;
@@ -75,7 +74,7 @@ fn main() {
     let mut renderer = renderer::Renderer::new(display);
 
     let mut world = world::World::new();
-    let initialize_points = world.register_system(control_points::initialize_points);
+    let initialize_points = world.register_system(bezier::initialize_bezier_curve);
     world
         .run_system(initialize_points)
         .expect("Control points weren't successfully initialized");

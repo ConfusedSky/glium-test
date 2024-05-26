@@ -1,4 +1,4 @@
-use crate::{control_points, position::Position, renderer::RenderParams, selection};
+use crate::{bezier, position::Position, renderer::RenderParams, selection};
 use bevy_ecs::{component::Component, world::World};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
@@ -153,21 +153,15 @@ impl<'draw> Renderer<'draw> {
     }
 
     pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
-        let mut query = world.query::<(
-            &Position,
-            &control_points::Point,
-            Option<&selection::Hovered>,
-        )>();
+        let mut query = world.query::<(&Position, &bezier::Point, Option<&selection::Hovered>)>();
         let iter = query
             .iter(world)
-            .map(
-                |(position, control_points::Point { size }, hovered)| RenderData {
-                    position: *position,
-                    size: *size,
-                    hovered: hovered.is_some(),
-                    attached_point: None,
-                },
-            );
+            .map(|(position, bezier::Point { size }, hovered)| RenderData {
+                position: *position,
+                size: *size,
+                hovered: hovered.is_some(),
+                attached_point: None,
+            });
         self.draw_points(render_params, iter);
     }
 }
