@@ -6,7 +6,7 @@ use bevy_ecs::{
 
 use crate::{
     position::Position,
-    selection::{Draggable, Hoverable},
+    selection::{Connection, Draggable, Hoverable},
 };
 
 #[derive(Resource)]
@@ -26,11 +26,7 @@ pub struct Point {
     pub size: f32,
 }
 
-fn create_control_point<'commands>(
-    commands: &'commands mut Commands,
-    x: f32,
-    y: f32,
-) -> EntityCommands<'commands> {
+fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
     commands.spawn((
         Position::new(x, y),
         Point { size: 15.0 },
@@ -43,8 +39,12 @@ pub fn initialize_points(mut commands: Commands) {
     let start_handle = create_control_point(&mut commands, 400.0, 456.0).id();
     let end_handle = create_control_point(&mut commands, 400.0, 24.0).id();
 
-    let start_point = create_control_point(&mut commands, 200.0, 240.0).id();
-    let end_point = create_control_point(&mut commands, 600.0, 240.0).id();
+    let start_point = create_control_point(&mut commands, 200.0, 240.0)
+        .insert(Connection(start_handle))
+        .id();
+    let end_point = create_control_point(&mut commands, 600.0, 240.0)
+        .insert(Connection(end_handle))
+        .id();
 
     commands.insert_resource(ControlPoints {
         start_point,

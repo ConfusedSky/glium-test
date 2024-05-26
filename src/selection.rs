@@ -28,8 +28,10 @@ pub struct Hoverable {
 /// This component is added and removed to
 /// components with the [Hoverable] component
 /// if the mouse is with the [Hoverable]'s radius
-#[derive(Component)]
-pub struct Hovered;
+#[derive(Component, Default)]
+pub struct Hovered {
+    connected: bool,
+}
 
 /// This component allows items to be dragged
 /// if they have the [Hoverable] and [Position]
@@ -37,12 +39,24 @@ pub struct Hovered;
 #[derive(Component)]
 pub struct Draggable;
 
+/// This entity is connected to another entity
+/// Any hover or drag events are mirrored for
+/// the host and the connected entity
+#[derive(Component)]
+pub struct Connection(pub Entity);
+
 pub fn mouse_moved(
     mut commands: Commands,
     held: Res<HeldItems>,
     mouse_position: Res<MousePosition>,
     mut queries: ParamSet<(
-        Query<(Entity, &Position, &Hoverable, Option<&Hovered>)>,
+        Query<(
+            Entity,
+            &Position,
+            &Hoverable,
+            Option<&Hovered>,
+            Option<&Connection>,
+        )>,
         Query<&mut Position>,
     )>,
 ) {
@@ -55,7 +69,7 @@ pub fn mouse_moved(
     // Only look for things to hover if we don't have a selection
     if held.items.is_empty() {
         let hover_query = queries.p0();
-        for (entity, position, hoverable, hovered) in hover_query.iter() {
+        for (entity, position, hoverable, hovered, connection) in hover_query.iter() {
             let distance_squared = position.distance_squared(&mouse_position.position());
             let radius_squared = hoverable.radius.powi(2);
 
@@ -63,9 +77,26 @@ pub fn mouse_moved(
             // mouse is now hovered, otherwise if the component
             // is hovered it should no longer be hovered
             if distance_squared < radius_squared {
-                commands.entity(entity).insert(Hovered);
-            } else if hovered.is_some() {
+                commands
+                    .entity(entity)
+                    .insert(Hovered::default());
+
+                // If there is a connected entity also set hovered on that element as well
+                if let Some(Connection(other)) = connection {
+                    commands.entity(*other).insert(Hovered { connected: true });
+                }
+            } else if let Some(Hovered { connected }) = hovered {
+                // Connected hovers should be taken care of when
+                // the host entity loses hover
+                if *connected {
+                    continue;
+                }
+
                 commands.entity(entity).remove::<Hovered>();
+
+                if let Some(Connection(other)) = connection {
+                    commands.entity(*other).remove::<Hovered>();
+                }
             }
         }
     // Otherwise we want to move the selection
@@ -94,8 +125,7 @@ pub fn grab_selection(
 
     if mouse_buttons.left_mouse_pressed() {
         // Put all items that are being hovered into the selection
-        let data: Vec<_> = hover_query.iter().collect();
-        held.items = data;
+        held.items = hover_query.iter().collect();
     } else if mouse_buttons.left_mouse_released() {
         // Clear all selection if the mouse is let go
         held.items.clear();
