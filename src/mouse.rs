@@ -46,6 +46,10 @@ impl MouseButtons {
         }
     }
 
+    pub fn needs_end_frame(&self) -> bool {
+        self.left_mouse_pressed || self.left_mouse_released
+    }
+
     pub fn end_frame(&mut self) {
         self.left_mouse_pressed = false;
         self.left_mouse_released = false;

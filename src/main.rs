@@ -12,11 +12,11 @@ use std::time::SystemTime;
 use glium::implement_vertex;
 use winit::event::MouseButton;
 
-use bevy_ecs::{change_detection::{DetectChanges, DetectChangesMut}, schedule::Schedule, world};
+use bevy_ecs::{schedule::Schedule, world};
 
 use crate::{
     mouse::{MouseButtons, MousePosition},
-    selection::search_for_hovered,
+    selection::{grab_selection, mouse_moved, HeldItems},
 };
 
 #[derive(Copy, Clone)]
@@ -81,9 +81,10 @@ fn main() {
         .expect("Control points weren't successfully initialized");
     world.insert_resource::<MousePosition>(Default::default());
     world.insert_resource::<MouseButtons>(Default::default());
+    world.insert_resource::<HeldItems>(Default::default());
 
     let mut schedule: Schedule = Default::default();
-    schedule.add_systems(search_for_hovered);
+    schedule.add_systems((mouse_moved, grab_selection));
 
     // let control_points = world.spawn(control_points).id();
     // let follow_points = world.spawn(follow_points).id();
@@ -161,6 +162,9 @@ fn main() {
         renderer.draw(&mut world, &window_size);
 
         let mut mouse_buttons = world.resource_mut::<MouseButtons>();
-        mouse_buttons.end_frame();
+        if mouse_buttons.needs_end_frame() {
+            // We want to make sure we don't trigger change detection every frame
+            mouse_buttons.end_frame();
+        }
     });
 }
