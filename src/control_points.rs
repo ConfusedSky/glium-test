@@ -1,8 +1,10 @@
 use bevy_ecs::{
-    component::Component, entity::Entity, system::{Commands, Resource}
+    component::Component,
+    entity::Entity,
+    system::{Commands, Resource},
 };
 
-use crate::position::Position;
+use crate::{position::Position, selection::Hoverable};
 
 #[derive(Resource)]
 pub struct ControlPoints {
@@ -21,8 +23,12 @@ pub struct Point {
     pub size: f32,
 }
 
-fn create_control_point(x: f32, y: f32) -> (Position, Point) {
-    (Position::new(x, y), Point { size: 15.0 })
+fn create_control_point(x: f32, y: f32) -> (Position, Point, Hoverable) {
+    (
+        Position::new(x, y),
+        Point { size: 15.0 },
+        Hoverable { radius: 20.0 },
+    )
 }
 
 pub fn initialize_points(mut commands: Commands) {

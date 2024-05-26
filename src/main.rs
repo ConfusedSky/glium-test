@@ -1,16 +1,20 @@
 mod bezier;
 mod control_points;
+mod mouse;
 mod point;
 mod position;
 mod primitives;
 mod renderer;
+mod selection;
 
 use std::time::SystemTime;
 
 use glium::implement_vertex;
 use winit::event::MouseButton;
 
-use bevy_ecs::world;
+use bevy_ecs::{schedule::Schedule, world};
+
+use crate::{mouse::MousePosition, selection::search_for_hovered};
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -37,11 +41,11 @@ fn main() {
             [600.0, 240.0],
         ].into_iter().map(Into::into).collect();
 
-        let control_points = point::Data::new(&control_positions, None);
+        let control_points = point::Collection::new(&control_positions, None);
 
         control_points
     };
-    let follow_points = point::Data::new(&[], Some(10.0));
+    let follow_points = point::Collection::new(&[], Some(10.0));
 
     let mut previous_position = None;
 
@@ -49,7 +53,8 @@ fn main() {
         let control_points = control_points.get_points();
 
         let curve_points = bezier::generate_bezier_points(control_points);
-        let bezier_curve = primitives::Primatives::new(&curve_points, primitives::Type::LineStrip, 2.0);
+        let bezier_curve =
+            primitives::Primatives::new(&curve_points, primitives::Type::LineStrip, 2.0);
 
         let line_points: Vec<Vertex> = control_points
             .into_iter()
@@ -68,21 +73,27 @@ fn main() {
 
     let mut world = world::World::new();
     let initialize_points = world.register_system(control_points::initialize_points);
-    world.run_system(initialize_points).expect("Control points weren't successfully initialized");
+    world
+        .run_system(initialize_points)
+        .expect("Control points weren't successfully initialized");
+    world.insert_resource::<MousePosition>(Default::default());
 
-    let control_points = world.spawn(control_points).id();
-    let follow_points = world.spawn(follow_points).id();
-    let lines = world.spawn(lines).id();
-    let bezier_curve = world.spawn(bezier_curve).id();
+    let mut schedule: Schedule = Default::default();
+    schedule.add_systems(search_for_hovered);
+
+    // let control_points = world.spawn(control_points).id();
+    // let follow_points = world.spawn(follow_points).id();
+    // let lines = world.spawn(lines).id();
+    // let bezier_curve = world.spawn(bezier_curve).id();
 
     let _ = event_loop.run(move |event, window_target| {
-        let [mut control_points, mut follow_points, mut lines, mut bezier_curve] = world
-            .get_many_entities_mut([control_points, follow_points, lines, bezier_curve])
-            .unwrap();
-        let mut control_points = control_points.get_mut::<point::Data>().unwrap();
-        let mut follow_points = follow_points.get_mut::<point::Data>().unwrap();
-        let mut lines = lines.get_mut::<primitives::Primatives>().unwrap();
-        let mut bezier_curve = bezier_curve.get_mut::<primitives::Primatives>().unwrap();
+        // let [mut control_points, mut follow_points, mut lines, mut bezier_curve] = world
+        // .get_many_entities_mut([control_points, follow_points, lines, bezier_curve])
+        // .unwrap();
+        // let mut control_points = control_points.get_mut::<point::Data>().unwrap();
+        // let mut follow_points = follow_points.get_mut::<point::Data>().unwrap();
+        // let mut lines = lines.get_mut::<primitives::Primatives>().unwrap();
+        // let mut bezier_curve = bezier_curve.get_mut::<primitives::Primatives>().unwrap();
 
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {
@@ -95,21 +106,24 @@ fn main() {
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32].into();
+                    let mut mouse_position = world.resource_mut::<MousePosition>();
+                    mouse_position.previous_position = mouse_position.position;
+                    mouse_position.position = position;
 
-                    if control_points.mouse_moved(&position, &previous_position) {
-                        let control_points = control_points.get_points();
+                    // if control_points.mouse_moved(&position, &previous_position) {
+                    // let control_points = control_points.get_points();
 
-                        let curve_points = bezier::generate_bezier_points(control_points);
-                        bezier_curve.set_points(&curve_points);
+                    // let curve_points = bezier::generate_bezier_points(control_points);
+                    // bezier_curve.set_points(&curve_points);
 
-                        let line_points: Vec<Vertex> = control_points
-                            .into_iter()
-                            .map(|x| Vertex {
-                                position: (*x).into(),
-                            })
-                            .collect();
-                        lines.set_points(&line_points);
-                    }
+                    // let line_points: Vec<Vertex> = control_points
+                    // .into_iter()
+                    // .map(|x| Vertex {
+                    // position: (*x).into(),
+                    // })
+                    // .collect();
+                    // lines.set_points(&line_points);
+                    // }
 
                     previous_position = Some(position);
                 }
@@ -127,14 +141,16 @@ fn main() {
             _ => (),
         };
 
-        let elapsed = timer.elapsed().unwrap().as_secs_f64() / 4.0;
+        schedule.run(&mut world);
 
-        let p = bezier::generate_bezier_points_with_offset(
-            control_points.get_points(),
-            Some(5),
-            Some(elapsed),
-        );
-        follow_points.set_points(&p);
+        // let elapsed = timer.elapsed().unwrap().as_secs_f64() / 4.0;
+
+        // let p = bezier::generate_bezier_points_with_offset(
+        // control_points.get_points(),
+        // Some(5),
+        // Some(elapsed),
+        // );
+        // follow_points.set_points(&p);
 
         renderer.draw(&mut world, &window_size);
     });

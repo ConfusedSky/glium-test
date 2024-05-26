@@ -13,11 +13,11 @@ struct Vertex {
 implement_vertex!(Vertex, position, uv);
 
 #[derive(Default)]
-struct Point {
-    position: Position,
-    size: f32,
-    hovered: bool,
-    attached_point: Option<usize>,
+pub struct RenderData {
+    pub position: Position,
+    pub size: f32,
+    pub hovered: bool,
+    pub attached_point: Option<usize>,
 }
 
 pub struct Renderer<'draw> {
@@ -115,9 +115,9 @@ impl<'draw> Renderer<'draw> {
 
     // Maybe make this public eventually since it could end up being more efficient to use this
     // than render single point
-    fn draw_points<'a, It>(&self, render_params: &mut RenderParams, data: It)
+    pub fn draw_points<'a, It>(&self, render_params: &mut RenderParams, data: It)
     where
-        It: IntoIterator<Item = &'a Point>,
+        It: IntoIterator<Item = &'a RenderData>,
     {
         let color: [f32; 3] = [1.0, 0.0, 0.0];
         let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
@@ -142,26 +142,24 @@ impl<'draw> Renderer<'draw> {
         }
     }
 
-    pub fn draw(&self, render_params: &mut RenderParams, data: &Data) {
+    #[allow(dead_code)]
+    pub fn draw(&self, render_params: &mut RenderParams, data: &Collection) {
         self.draw_points(render_params, &data.points);
     }
 
-    pub fn draw_single(&self, render_params: &mut RenderParams, position: Position, size: f32) {
+    #[allow(dead_code)]
+    pub fn draw_single(&self, render_params: &mut RenderParams, data: RenderData) {
         self.draw_points(
             render_params,
-            &[Point {
-                position,
-                size,
-                ..Default::default()
-            }],
+            &[data],
         );
     }
 }
 
 #[derive(Component)]
-pub struct Data {
+pub struct Collection {
     /// Point objects for each point to render
-    points: Vec<Point>,
+    points: Vec<RenderData>,
     /// Size for each point
     point_size: f32,
 
@@ -173,7 +171,7 @@ pub struct Data {
     positions: Vec<Position>,
 }
 
-impl Data {
+impl Collection {
     const DEFAULT_SIZE: f32 = 15.0;
 
     pub fn new(points: &[Position], size: Option<f32>) -> Self {
@@ -194,7 +192,7 @@ impl Data {
         self.points = points
             .iter()
             .enumerate()
-            .map(|(i, x)| Point {
+            .map(|(i, x)| RenderData {
                 size: self.point_size,
                 position: *x,
                 hovered: false,
