@@ -17,7 +17,7 @@ struct Point {
     attached_point: Option<usize>,
 }
 
-pub struct Points<'a> {
+pub struct Renderer<'a> {
     /// Quad buffer for rendering points
     buffer: VertexBuffer<Vertex>,
     /// Indicies of the quad buffer
@@ -26,23 +26,10 @@ pub struct Points<'a> {
     program: Program,
     /// This is here so we properly set alpha blending
     params: DrawParameters<'a>,
-    /// Point objects for each point to render
-    points: Vec<Point>,
-    /// Size for each point
-    point_size: f32,
-
-    /// Index into the points vector that contains the held point
-    held_point: Option<usize>,
-
-    /// This is just a buffer that is used when calling get_points
-    /// Should not be used for anything else
-    positions: Vec<Position>,
 }
 
-impl<'a> Points<'a> {
-    const DEFAULT_SIZE: f32 = 15.0;
-
-    pub fn new(display: &Display<WindowSurface>, size: Option<f32>) -> Self {
+impl<'a> Renderer<'a> {
+    pub fn new(display: &Display<WindowSurface>) -> Self {
         let points = vec![
             Vertex {
                 position: [-1.0, -1.0],
@@ -62,7 +49,7 @@ impl<'a> Points<'a> {
             },
         ];
         let buffer = glium::VertexBuffer::new(display, &points).unwrap();
-        let index_buffer = glium::IndexBuffer::new(
+        let indicies = glium::IndexBuffer::new(
             display,
             PrimitiveType::TrianglesList,
             &[0u16, 1, 2, 1, 3, 2],
@@ -116,15 +103,64 @@ impl<'a> Points<'a> {
         };
 
         Self {
-            buffer,
-            indicies: index_buffer,
-            program,
             params,
+            program,
+            buffer,
+            indicies,
+        }
+    }
+
+    pub fn draw(&self, target: &mut Frame, data: &Data, screen_size: &Position) {
+        let color: [f32; 3] = [1.0, 0.0, 0.0];
+        let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
+
+        for point in &data.points {
+            let uniforms = dynamic_uniform! {
+                point_size: &data.point_size,
+                window_size: screen_size,
+                point_color: if point.hovered { &hover_color } else { &color } ,
+                offset: &point.position,
+            };
+            target
+                .draw(
+                    &self.buffer,
+                    &self.indicies,
+                    &self.program,
+                    &uniforms,
+                    &self.params,
+                )
+                .unwrap();
+        }
+    }
+}
+
+pub struct Data {
+    /// Point objects for each point to render
+    points: Vec<Point>,
+    /// Size for each point
+    point_size: f32,
+
+    /// Index into the points vector that contains the held point
+    held_point: Option<usize>,
+
+    /// This is just a buffer that is used when calling get_points
+    /// Should not be used for anything else
+    positions: Vec<Position>,
+}
+
+impl Data {
+    const DEFAULT_SIZE: f32 = 15.0;
+
+    pub fn new(points: &[Position], size: Option<f32>) -> Self {
+        let mut result = Self {
             point_size: size.unwrap_or(Self::DEFAULT_SIZE),
             points: vec![],
             positions: vec![],
             held_point: None,
-        }
+        };
+        result.set_points(points);
+
+        result
     }
 
     pub fn set_points(&mut self, points: &[Position]) {
@@ -193,26 +229,4 @@ impl<'a> Points<'a> {
         self.held_point = None;
     }
 
-    pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
-        let color: [f32; 3] = [1.0, 0.0, 0.0];
-        let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
-
-        for point in &self.points {
-            let uniforms = dynamic_uniform! {
-                point_size: &self.point_size,
-                window_size: screen_size,
-                point_color: if point.hovered { &hover_color } else { &color } ,
-                offset: &point.position,
-            };
-            target
-                .draw(
-                    &self.buffer,
-                    &self.indicies,
-                    &self.program,
-                    &uniforms,
-                    &self.params,
-                )
-                .unwrap();
-        }
-    }
 }

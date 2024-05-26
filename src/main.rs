@@ -6,7 +6,6 @@ mod primitives;
 use std::time::SystemTime;
 
 use glium::{implement_vertex, Surface};
-use point::Points;
 use winit::event::MouseButton;
 
 #[derive(Copy, Clone)]
@@ -34,12 +33,11 @@ fn main() {
             [600.0, 240.0],
         ].into_iter().map(Into::into).collect();
 
-        let mut control_points = Points::new(&display, None);
-        control_points.set_points(&control_positions);
+        let control_points = point::Data::new(&control_positions, None);
 
         control_points
     };
-    let mut follow_points = Points::new(&display, Some(10.0));
+    let mut follow_points = point::Data::new(&[], Some(10.0));
 
     let mut previous_position = None;
 
@@ -68,6 +66,7 @@ fn main() {
 
     let timer = SystemTime::now();
     let primitives_renderer = primitives::Renderer::new(&display);
+    let point_renderer = point::Renderer::new(&display);
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -124,9 +123,9 @@ fn main() {
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
         primitives_renderer.draw(&mut target, &lines, &window_size);
-        follow_points.draw(&mut target, &window_size);
+        point_renderer.draw(&mut target, &follow_points, &window_size);
         primitives_renderer.draw(&mut target, &curve_cloud, &window_size);
-        control_points.draw(&mut target, &window_size);
+        point_renderer.draw(&mut target, &control_points, &window_size);
 
         target.finish().unwrap();
     });
