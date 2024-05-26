@@ -4,7 +4,10 @@ use bevy_ecs::{
     system::{Commands, Resource},
 };
 
-use crate::{position::Position, selection::Hoverable};
+use crate::{
+    position::Position,
+    selection::{Draggable, Hoverable},
+};
 
 #[derive(Resource)]
 pub struct ControlPoints {
@@ -23,19 +26,23 @@ pub struct Point {
     pub size: f32,
 }
 
-fn create_control_point(x: f32, y: f32) -> (Position, Point, Hoverable) {
-    (
-        Position::new(x, y),
-        Point { size: 15.0 },
-        Hoverable { radius: 20.0 },
-    )
+fn create_control_point(mut commands: Commands, x: f32, y: f32) -> Entity {
+    commands
+        .spawn((
+            Position::new(x, y),
+            Point { size: 15.0 },
+            Hoverable { radius: 20.0 },
+            Draggable,
+        ))
+        .id()
 }
 
 pub fn initialize_points(mut commands: Commands) {
-    let start_point = commands.spawn(create_control_point(200.0, 240.0)).id();
-    let start_handle = commands.spawn(create_control_point(400.0, 456.0)).id();
-    let end_handle = commands.spawn(create_control_point(400.0, 24.0)).id();
-    let end_point = commands.spawn(create_control_point(600.0, 240.0)).id();
+    let start_handle = create_control_point(commands.reborrow(), 400.0, 456.0);
+    let end_handle = create_control_point(commands.reborrow(), 400.0, 24.0);
+
+    let start_point = create_control_point(commands.reborrow(), 200.0, 240.0);
+    let end_point = create_control_point(commands.reborrow(), 600.0, 240.0);
 
     commands.insert_resource(ControlPoints {
         start_point,

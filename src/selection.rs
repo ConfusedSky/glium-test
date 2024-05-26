@@ -24,6 +24,9 @@ pub struct Hoverable {
 #[derive(Component)]
 pub struct Hovered;
 
+#[derive(Component)]
+pub struct Draggable;
+
 pub fn mouse_moved(
     mut commands: Commands,
     held: Res<HeldItems>,
@@ -73,7 +76,7 @@ pub fn grab_selection(
     // mut commands: Commands,
     mouse_buttons: Res<MouseButtons>,
     mut held: ResMut<HeldItems>,
-    hover_query: Query<Entity, With<Hovered>>,
+    hover_query: Query<Entity, (With<Hovered>, With<Draggable>)>,
 ) {
     if !mouse_buttons.is_changed() {
         return;
