@@ -10,11 +10,10 @@ use std::time::SystemTime;
 
 use winit::event::MouseButton;
 
-use bevy_ecs::{schedule::Schedule, world};
+use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule}, world};
 
 use crate::{
-    mouse::{MouseButtons, MousePosition},
-    selection::{grab_selection, mouse_moved, HeldItems},
+    bezier::update_bezier_curve, mouse::{MouseButtons, MousePosition}, selection::{grab_selection, mouse_moved, HeldItems}
 };
 
 fn main() {
@@ -41,8 +40,6 @@ fn main() {
         control_points
     };
     let follow_points = point::Collection::new(&[], Some(10.0));
-
-    let mut previous_position = None;
 
     let (bezier_curve, lines) = {
         let control_points = control_points.get_points();
@@ -76,21 +73,9 @@ fn main() {
 
     let mut schedule: Schedule = Default::default();
     schedule.add_systems((mouse_moved, grab_selection));
-
-    // let control_points = world.spawn(control_points).id();
-    // let follow_points = world.spawn(follow_points).id();
-    // let lines = world.spawn(lines).id();
-    // let bezier_curve = world.spawn(bezier_curve).id();
+    schedule.add_systems(update_bezier_curve.after(mouse_moved));
 
     let _ = event_loop.run(move |event, window_target| {
-        // let [mut control_points, mut follow_points, mut lines, mut bezier_curve] = world
-        // .get_many_entities_mut([control_points, follow_points, lines, bezier_curve])
-        // .unwrap();
-        // let mut control_points = control_points.get_mut::<point::Data>().unwrap();
-        // let mut follow_points = follow_points.get_mut::<point::Data>().unwrap();
-        // let mut lines = lines.get_mut::<primitives::Primatives>().unwrap();
-        // let mut bezier_curve = bezier_curve.get_mut::<primitives::Primatives>().unwrap();
-
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {
                 winit::event::WindowEvent::CloseRequested => window_target.exit(),
@@ -119,20 +104,10 @@ fn main() {
                     // .collect();
                     // lines.set_points(&line_points);
                     // }
-
-                    previous_position = Some(position);
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
                     let mut mouse_buttons = world.resource_mut::<MouseButtons>();
                     mouse_buttons.update(state, button);
-
-                    if button == MouseButton::Left {
-                        if state.is_pressed() {
-                            control_points.click();
-                        } else {
-                            control_points.release();
-                        }
-                    }
                 }
                 _ => (),
             },

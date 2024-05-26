@@ -1,10 +1,16 @@
 use bevy_ecs::{
+    change_detection::DetectChanges,
     entity::Entity,
-    system::{Commands, EntityCommands, Resource},
+    query::{self, Changed},
+    system::{Commands, EntityCommands, Query, Res, ResMut, Resource, SystemState},
+    world::{Mut, Ref, World},
 };
 
 use crate::{
-    point::Point, position::Position, primitives, selection::{Connection, Draggable, Hoverable}
+    point::Point,
+    position::Position,
+    primitives,
+    selection::{Connection, Draggable, Hoverable},
 };
 
 fn bezier(
@@ -59,7 +65,7 @@ pub fn generate_bezier_points_with_offset(
     shape_points
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct BezierCurve {
     pub start_point: Entity,
     pub start_handle: Entity,
@@ -68,6 +74,45 @@ pub struct BezierCurve {
 
     pub handles: Entity,
     pub curve: Entity,
+}
+
+impl BezierCurve {
+    pub fn get_points<'a>(&self, world: &mut World) -> Vec<Position> {
+        world
+            .query::<&Position>()
+            .get_many(
+                world,
+                [
+                    self.start_point,
+                    self.start_handle,
+                    self.end_handle,
+                    self.end_point,
+                ],
+            )
+            .unwrap()
+            .into_iter()
+            .cloned()
+            .collect()
+    }
+
+    fn update_handles(&self, world: &mut World, points: &[Position]) {
+        let mut handles: Mut<primitives::Primatives> = world.get_mut(self.handles).unwrap();
+        let handle_points: Vec<primitives::Vertex> =
+            points.into_iter().map(|x| *x).map(Into::into).collect();
+        handles.set_points(&handle_points);
+    }
+    fn update_curve(&self, world: &mut World, points: &[Position]) {
+        let mut curve: Mut<primitives::Primatives> = world.get_mut(self.curve).unwrap();
+        let curve_points = generate_bezier_points(points);
+        curve.set_points(&curve_points);
+    }
+
+    pub fn update(&self, world: &mut World) {
+        let points = self.get_points(world);
+
+        self.update_handles(world, &points);
+        self.update_curve(world, &points);
+    }
 }
 
 fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
@@ -90,19 +135,46 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
         .insert(Connection(end_handle))
         .id();
 
-
     let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
     let handles = commands.spawn(handles).id();
 
     let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
     let curve = commands.spawn(curve).id();
 
-    commands.insert_resource(BezierCurve {
+    let resource = BezierCurve {
         start_point,
         start_handle,
         end_handle,
         end_point,
         handles,
         curve,
+    };
+    commands.add(move |world: &mut World| {
+        resource.update(world);
+        world.insert_resource(resource);
     });
+}
+
+pub fn update_bezier_curve(
+    mut commands: Commands,
+    query: Query<(), Changed<Position>>,
+    bezier_curve: Res<BezierCurve>,
+) {
+    let bezier_curve = bezier_curve.clone();
+
+    // Look at each point if any of them have a position that has changed
+    let curve_changed = query
+        .iter_many([
+            bezier_curve.start_point,
+            bezier_curve.start_handle,
+            bezier_curve.end_handle,
+            bezier_curve.end_point,
+        ])
+        .next();
+
+    if curve_changed.is_some() {
+        commands.add(move |world: &mut World| {
+            bezier_curve.update(world);
+        });
+    }
 }
