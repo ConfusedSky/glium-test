@@ -26,7 +26,11 @@ pub struct Point {
     pub size: f32,
 }
 
-fn create_control_point<'commands>(commands: &'commands mut Commands, x: f32, y: f32) -> EntityCommands<'commands> {
+fn create_control_point<'commands>(
+    commands: &'commands mut Commands,
+    x: f32,
+    y: f32,
+) -> EntityCommands<'commands> {
     commands.spawn((
         Position::new(x, y),
         Point { size: 15.0 },

@@ -16,14 +16,24 @@ pub struct HeldItems {
     pub items: Vec<Entity>,
 }
 
+/// If this component is added to an entity
+/// If gains the Hovered component when the
+/// mouse is within radius of the entities
+/// [Position]
 #[derive(Component)]
 pub struct Hoverable {
     pub radius: f32,
 }
 
+/// This component is added and removed to
+/// components with the [Hoverable] component
+/// if the mouse is with the [Hoverable]'s radius
 #[derive(Component)]
 pub struct Hovered;
 
+/// This component allows items to be dragged
+/// if they have the [Hoverable] and [Position]
+/// components as well
 #[derive(Component)]
 pub struct Draggable;
 
