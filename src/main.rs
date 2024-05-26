@@ -14,7 +14,7 @@ use winit::event::MouseButton;
 
 use bevy_ecs::{schedule::Schedule, world};
 
-use crate::{mouse::MousePosition, selection::search_for_hovered};
+use crate::{mouse::{MouseButtons, MousePosition}, selection::search_for_hovered};
 
 #[derive(Copy, Clone)]
 struct Vertex {
@@ -77,6 +77,7 @@ fn main() {
         .run_system(initialize_points)
         .expect("Control points weren't successfully initialized");
     world.insert_resource::<MousePosition>(Default::default());
+    world.insert_resource::<MouseButtons>(Default::default());
 
     let mut schedule: Schedule = Default::default();
     schedule.add_systems(search_for_hovered);
@@ -127,6 +128,9 @@ fn main() {
                     previous_position = Some(position);
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
+                    let mut mouse_buttons = world.resource_mut::<MouseButtons>();
+                    mouse_buttons.update(state, button);
+
                     if button == MouseButton::Left {
                         if state.is_pressed() {
                             control_points.click();
@@ -152,5 +156,8 @@ fn main() {
         // follow_points.set_points(&p);
 
         renderer.draw(&mut world, &window_size);
+
+        let mut mouse_buttons = world.resource_mut::<MouseButtons>();
+        mouse_buttons.end_frame();
     });
 }
