@@ -49,7 +49,7 @@ fn main() {
         let control_points = control_points.get_points();
 
         let curve_points = bezier::generate_bezier_points(control_points);
-        let bezier_curve = primitives::Data::new(&curve_points, primitives::Type::LineStrip, 2.0);
+        let bezier_curve = primitives::Primatives::new(&curve_points, primitives::Type::LineStrip, 2.0);
 
         let line_points: Vec<Vertex> = control_points
             .into_iter()
@@ -58,7 +58,7 @@ fn main() {
             })
             .collect();
         // Todo style this better
-        let lines = primitives::Data::new(&line_points, primitives::Type::Line, 2.0);
+        let lines = primitives::Primatives::new(&line_points, primitives::Type::Line, 2.0);
 
         (bezier_curve, lines)
     };
@@ -81,8 +81,8 @@ fn main() {
             .unwrap();
         let mut control_points = control_points.get_mut::<point::Data>().unwrap();
         let mut follow_points = follow_points.get_mut::<point::Data>().unwrap();
-        let mut lines = lines.get_mut::<primitives::Data>().unwrap();
-        let mut bezier_curve = bezier_curve.get_mut::<primitives::Data>().unwrap();
+        let mut lines = lines.get_mut::<primitives::Primatives>().unwrap();
+        let mut bezier_curve = bezier_curve.get_mut::<primitives::Primatives>().unwrap();
 
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {

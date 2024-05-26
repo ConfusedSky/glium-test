@@ -73,7 +73,7 @@ impl Renderer {
         }
     }
 
-    pub fn draw(&mut self, render_params: &mut RenderParams, data: &mut Data) {
+    pub fn draw(&mut self, render_params: &mut RenderParams, data: &mut Primatives) {
         let uniforms = dynamic_uniform! {
             window_size: render_params.screen_size,
         };
@@ -123,7 +123,7 @@ impl Renderer {
 }
 
 #[derive(Component)]
-pub struct Data {
+pub struct Primatives {
     id: usize,
     size: f32,
     primitive_type: Type,
@@ -132,7 +132,7 @@ pub struct Data {
     buffer_needs_refresh: bool,
 }
 
-impl Data {
+impl Primatives {
     pub fn new(points: &[Vertex], primitive_type: Type, size: f32) -> Self {
         let id = DATA_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
