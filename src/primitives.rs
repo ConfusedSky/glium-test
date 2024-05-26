@@ -1,10 +1,9 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::{renderer::RenderParams, Vertex};
+use crate::{position::Position, renderer::RenderParams};
 use bevy_ecs::component::Component;
 use glium::{
-    dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Program, Surface,
-    VertexBuffer,
+    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, Display, DrawParameters, Program, Surface, VertexBuffer
 };
 
 static DATA_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -22,6 +21,20 @@ impl From<Type> for glium::index::PrimitiveType {
             Type::Point => Self::Points,
             Type::Line => Self::LinesList,
             Type::LineStrip => Self::LineStrip,
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct Vertex {
+    position: [f32; 2],
+}
+implement_vertex!(Vertex, position);
+
+impl From<Position> for Vertex {
+    fn from(value: Position) -> Self {
+        Self {
+            position: value.into()
         }
     }
 }

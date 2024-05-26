@@ -8,7 +8,6 @@ mod selection;
 
 use std::time::SystemTime;
 
-use glium::implement_vertex;
 use winit::event::MouseButton;
 
 use bevy_ecs::{schedule::Schedule, world};
@@ -17,12 +16,6 @@ use crate::{
     mouse::{MouseButtons, MousePosition},
     selection::{grab_selection, mouse_moved, HeldItems},
 };
-
-#[derive(Copy, Clone)]
-struct Vertex {
-    position: [f32; 2],
-}
-implement_vertex!(Vertex, position);
 
 fn main() {
     let event_loop = winit::event_loop::EventLoopBuilder::new()
@@ -58,11 +51,10 @@ fn main() {
         let bezier_curve =
             primitives::Primatives::new(&curve_points, primitives::Type::LineStrip, 2.0);
 
-        let line_points: Vec<Vertex> = control_points
+        let line_points: Vec<primitives::Vertex> = control_points
             .into_iter()
-            .map(|x| Vertex {
-                position: (*x).into(),
-            })
+            .map(|x| *x)
+            .map(Into::into)
             .collect();
         // Todo style this better
         let lines = primitives::Primatives::new(&line_points, primitives::Type::Line, 2.0);

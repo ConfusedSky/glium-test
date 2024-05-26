@@ -4,7 +4,7 @@ use bevy_ecs::{
 };
 
 use crate::{
-    point::Point, position::Position, selection::{Connection, Draggable, Hoverable}, Vertex
+    point::Point, position::Position, primitives, selection::{Connection, Draggable, Hoverable}
 };
 
 fn bezier(
@@ -22,10 +22,10 @@ fn bezier(
     Position::lerp(d, e, t)
 }
 
-pub fn generate_bezier_points(control_points: &[Position]) -> Vec<Vertex> {
+pub fn generate_bezier_points(control_points: &[Position]) -> Vec<primitives::Vertex> {
     generate_bezier_points_with_offset(control_points, None, None)
         .into_iter()
-        .map(|x| Vertex { position: x.into() })
+        .map(Into::into)
         .collect()
 }
 
@@ -70,9 +70,6 @@ pub struct BezierCurve {
     pub curve: Entity,
 }
 
-#[derive(Resource)]
-pub struct ControlPointArray(pub [Position; 4]);
-
 fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
     commands.spawn((
         Position::new(x, y),
@@ -93,8 +90,12 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
         .insert(Connection(end_handle))
         .id();
 
-    let handles = commands.spawn_empty().id();
-    let curve = commands.spawn_empty().id();
+
+    let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
+    let handles = commands.spawn(handles).id();
+
+    let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
+    let curve = commands.spawn(curve).id();
 
     commands.insert_resource(BezierCurve {
         start_point,
