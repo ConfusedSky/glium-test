@@ -21,22 +21,12 @@ impl From<PrimitiveType> for glium::index::PrimitiveType {
     }
 }
 
-pub struct Primitives<'a> {
-    buffer: VertexBuffer<Vertex>,
+pub struct PrimitivesRenderer {
     program: Program,
-    params: DrawParameters<'a>,
-    primitive_type: PrimitiveType,
 }
 
-impl<'a> Primitives<'a> {
-    pub fn new(
-        display: &Display<WindowSurface>,
-        points: &[Vertex],
-        primitive_type: PrimitiveType,
-        size: f32,
-    ) -> Self {
-        let buffer = glium::VertexBuffer::new(display, &points).unwrap();
-
+impl PrimitivesRenderer {
+    pub fn new(display: &Display<WindowSurface>) -> Self {
         let vertex_shader_src = r#"#version 400
 
             in vec2 position;
@@ -68,6 +58,42 @@ impl<'a> Primitives<'a> {
 
         let program = glium::Program::new(display, source).unwrap();
 
+        Self { program }
+    }
+
+    pub fn draw(&self, target: &mut Frame, data: &PrimitivesData, screen_size: &Position) {
+        let uniforms = dynamic_uniform! {
+            window_size: screen_size,
+        };
+
+        target
+            .draw(
+                &data.buffer,
+                &glium::index::NoIndices(data.primitive_type.into()),
+                &self.program,
+                &uniforms,
+                &data.params,
+            )
+            .unwrap();
+    }
+}
+
+pub struct PrimitivesData<'a> {
+    buffer: VertexBuffer<Vertex>,
+    params: DrawParameters<'a>,
+    primitive_type: PrimitiveType,
+}
+
+impl<'a> PrimitivesData<'a> {
+    pub fn new(
+        display: &Display<WindowSurface>,
+        points: &[Vertex],
+        primitive_type: PrimitiveType,
+        size: f32,
+    ) -> Self {
+        let buffer = glium::VertexBuffer::new(display, &points).unwrap();
+
+
         let params = DrawParameters {
             point_size: Some(size),
             line_width: Some(size),
@@ -76,7 +102,6 @@ impl<'a> Primitives<'a> {
 
         Self {
             buffer,
-            program,
             params,
             primitive_type,
         }
@@ -86,19 +111,4 @@ impl<'a> Primitives<'a> {
         self.buffer = glium::VertexBuffer::new(display, &points).unwrap();
     }
 
-    pub fn draw(&self, target: &mut Frame, screen_size: &Position) {
-        let uniforms = dynamic_uniform! {
-            window_size: screen_size,
-        };
-
-        target
-            .draw(
-                &self.buffer,
-                &glium::index::NoIndices(self.primitive_type.into()),
-                &self.program,
-                &uniforms,
-                &self.params,
-            )
-            .unwrap();
-    }
 }

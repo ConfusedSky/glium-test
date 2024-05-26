@@ -5,7 +5,7 @@ mod primitives;
 
 use std::time::SystemTime;
 
-use crate::primitives::Primitives;
+use crate::primitives::{PrimitivesData, PrimitivesRenderer};
 use glium::{implement_vertex, Surface};
 use point::Points;
 use winit::event::MouseButton;
@@ -48,7 +48,7 @@ fn main() {
         let control_points = control_points.get_points();
 
         let curve_points = bezier::generate_bezier_points(control_points);
-        let curve_cloud = Primitives::new(
+        let curve_cloud = PrimitivesData::new(
             &display,
             &curve_points,
             primitives::PrimitiveType::LineStrip,
@@ -62,12 +62,13 @@ fn main() {
             })
             .collect();
         // Todo style this better
-        let lines = Primitives::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
+        let lines = PrimitivesData::new(&display, &line_points, primitives::PrimitiveType::Line, 2.0);
 
         (curve_cloud, lines)
     };
 
     let timer = SystemTime::now();
+    let primitives_renderer = PrimitivesRenderer::new(&display);
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -123,9 +124,9 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
-        lines.draw(&mut target, &window_size);
+        primitives_renderer.draw(&mut target, &lines, &window_size);
         follow_points.draw(&mut target, &window_size);
-        curve_cloud.draw(&mut target, &window_size);
+        primitives_renderer.draw(&mut target, &curve_cloud, &window_size);
         control_points.draw(&mut target, &window_size);
 
         target.finish().unwrap();
