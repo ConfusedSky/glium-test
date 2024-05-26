@@ -1,7 +1,7 @@
 use bevy_ecs::world::World;
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
 
-use crate::{point, position::Position, primitives};
+use crate::{control_points, point, position::Position, primitives};
 
 pub struct RenderParams<'a> {
     pub display: &'a Display<WindowSurface>,
@@ -36,14 +36,19 @@ impl Renderer<'_> {
             screen_size: &window_size,
         };
 
-        let mut query = world.query::<&mut primitives::Data>();
-        for mut data in query.iter_mut(world) {
-            self.primitives_renderer.draw(&mut render_params, &mut data);
-        }
+        // let mut query = world.query::<&mut primitives::Data>();
+        // for mut data in query.iter_mut(world) {
+            // self.primitives_renderer.draw(&mut render_params, &mut data);
+        // }
 
-        let mut query = world.query::<&mut point::Data>();
-        for mut data in query.iter_mut(world) {
-            self.points_renderer.draw(&mut render_params, &mut data);
+        // let mut query = world.query::<&mut point::Data>();
+        // for mut data in query.iter_mut(world) {
+            // self.points_renderer.draw(&mut render_params, &mut data);
+        // }
+
+        let mut query = world.query::<(&Position, &control_points::Point)>();
+        for (position, control_points::Point { size }) in query.iter(world) {
+            self.points_renderer.draw_single(&mut render_params, *position, *size);
         }
 
         target.finish().unwrap();

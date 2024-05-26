@@ -12,13 +12,15 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, uv);
 
+#[derive(Default)]
 struct Point {
     position: Position,
+    size: f32,
     hovered: bool,
     attached_point: Option<usize>,
 }
 
-pub struct Renderer<'a> {
+pub struct Renderer<'draw> {
     /// Quad buffer for rendering points
     buffer: VertexBuffer<Vertex>,
     /// Indicies of the quad buffer
@@ -26,10 +28,10 @@ pub struct Renderer<'a> {
     /// Program that renders a circle on a quad mesh
     program: Program,
     /// This is here so we properly set alpha blending
-    params: DrawParameters<'a>,
+    params: DrawParameters<'draw>,
 }
 
-impl<'a> Renderer<'a> {
+impl<'draw> Renderer<'draw> {
     pub fn new(display: &Display<WindowSurface>) -> Self {
         let points = vec![
             Vertex {
@@ -111,13 +113,18 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    pub fn draw(&self, render_params: &mut RenderParams, data: &Data) {
+    // Maybe make this public eventually since it could end up being more efficient to use this
+    // than render single point
+    fn draw_points<'a, It>(&self, render_params: &mut RenderParams, data: It)
+    where
+        It: IntoIterator<Item = &'a Point>,
+    {
         let color: [f32; 3] = [1.0, 0.0, 0.0];
         let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
 
-        for point in &data.points {
+        for point in data.into_iter() {
             let uniforms = dynamic_uniform! {
-                point_size: &data.point_size,
+                point_size: &point.size,
                 window_size: render_params.screen_size,
                 point_color: if point.hovered { &hover_color } else { &color } ,
                 offset: &point.position,
@@ -133,6 +140,21 @@ impl<'a> Renderer<'a> {
                 )
                 .unwrap();
         }
+    }
+
+    pub fn draw(&self, render_params: &mut RenderParams, data: &Data) {
+        self.draw_points(render_params, &data.points);
+    }
+
+    pub fn draw_single(&self, render_params: &mut RenderParams, position: Position, size: f32) {
+        self.draw_points(
+            render_params,
+            &[Point {
+                position,
+                size,
+                ..Default::default()
+            }],
+        );
     }
 }
 
@@ -173,6 +195,7 @@ impl Data {
             .iter()
             .enumerate()
             .map(|(i, x)| Point {
+                size: self.point_size,
                 position: *x,
                 hovered: false,
                 attached_point: {
@@ -196,7 +219,7 @@ impl Data {
         position: &Position,
         previous_position: &Option<Position>,
     ) -> bool {
-        let size = Self::DEFAULT_SIZE + 5.0;
+        let size = self.point_size + 5.0;
         let size_squared = size.powi(2);
 
         for point in &mut self.points {

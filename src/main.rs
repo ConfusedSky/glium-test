@@ -1,4 +1,5 @@
 mod bezier;
+mod control_points;
 mod point;
 mod position;
 mod primitives;
@@ -66,6 +67,9 @@ fn main() {
     let mut renderer = renderer::Renderer::new(display);
 
     let mut world = world::World::new();
+    let initialize_points = world.register_system(control_points::initialize_points);
+    world.run_system(initialize_points).expect("Control points weren't successfully initialized");
+
     let control_points = world.spawn(control_points).id();
     let follow_points = world.spawn(follow_points).id();
     let lines = world.spawn(lines).id();

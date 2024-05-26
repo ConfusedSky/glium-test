@@ -1,9 +1,15 @@
 use crate::{position::Position, Vertex};
 
-fn bezier(p1: Position, p2: Position, p3: Position, p4: Position, t: f64) -> Position {
-    let a = Position::lerp(p1, p2, t);
-    let b = Position::lerp(p2, p3, t);
-    let c = Position::lerp(p3, p4, t);
+fn bezier(
+    start_point: Position,
+    start_handle: Position,
+    end_handle: Position,
+    end_point: Position,
+    t: f64,
+) -> Position {
+    let a = Position::lerp(start_point, start_handle, t);
+    let b = Position::lerp(start_handle, end_handle, t);
+    let c = Position::lerp(end_handle, end_point, t);
     let d = Position::lerp(a, b, t);
     let e = Position::lerp(b, c, t);
     Position::lerp(d, e, t)

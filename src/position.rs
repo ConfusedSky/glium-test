@@ -1,11 +1,16 @@
 use core::ops::{Add, Sub};
 
+use bevy_ecs::component::Component;
 use glium::uniforms::AsUniformValue;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component, Default)]
 pub struct Position([f32; 2]);
 
 impl Position {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self([x, y])
+    }
+
     pub fn x(&self) -> f32 {
         self.0[0]
     }
