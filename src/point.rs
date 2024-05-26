@@ -17,7 +17,6 @@ pub struct RenderData {
     pub position: Position,
     pub size: f32,
     pub hovered: bool,
-    pub attached_point: Option<usize>,
 }
 
 // Move this back over to point.rs after the refactor is complete
@@ -166,7 +165,6 @@ impl<'draw> Renderer<'draw> {
                 position: *position,
                 size: *size,
                 hovered: hovered.is_some(),
-                attached_point: None,
             });
         self.draw_points(render_params, iter);
     }
@@ -178,13 +176,6 @@ pub struct Collection {
     points: Vec<RenderData>,
     /// Size for each point
     point_size: f32,
-
-    /// Index into the points vector that contains the held point
-    held_point: Option<usize>,
-
-    /// This is just a buffer that is used when calling get_points
-    /// Should not be used for anything else
-    positions: Vec<Position>,
 }
 
 impl Collection {
@@ -194,8 +185,6 @@ impl Collection {
         let mut result = Self {
             point_size: size.unwrap_or(Self::DEFAULT_SIZE),
             points: vec![],
-            positions: vec![],
-            held_point: None,
         };
         result.set_points(points);
 
@@ -204,68 +193,13 @@ impl Collection {
 
     pub fn set_points(&mut self, points: &[Position]) {
         // Points are reset so the held point no longer makes any sense
-        self.held_point = None;
         self.points = points
             .iter()
-            .enumerate()
-            .map(|(i, x)| RenderData {
+            .map(|x| RenderData {
                 size: self.point_size,
                 position: *x,
                 hovered: false,
-                attached_point: {
-                    match i {
-                        0 => Some(1),
-                        3 => Some(2),
-                        _ => None,
-                    }
-                },
             })
             .collect();
-    }
-
-    pub fn get_points(&mut self) -> &[Position] {
-        self.positions = self.points.iter().map(|x| x.position).collect();
-        &self.positions
-    }
-
-    pub fn mouse_moved(
-        &mut self,
-        position: &Position,
-        previous_position: &Option<Position>,
-    ) -> bool {
-        let size = self.point_size + 5.0;
-        let size_squared = size.powi(2);
-
-        for point in &mut self.points {
-            let point_position = &point.position;
-            let distance_squared = point_position.distance_squared(position);
-
-            point.hovered = distance_squared < size_squared;
-        }
-
-        if let Some(point) = self.held_point {
-            let point = &mut self.points[point];
-            if let Some(previous_position) = previous_position {
-                let difference = *position - *previous_position;
-                point.position = point.position + difference;
-
-                if let Some(attached) = point.attached_point {
-                    let attached = &mut self.points[attached];
-                    attached.position = attached.position + difference;
-                }
-
-                return true;
-            }
-        }
-
-        false
-    }
-
-    pub fn click(&mut self) {
-        self.held_point = self.points.iter().position(|x| x.hovered);
-    }
-
-    pub fn release(&mut self) {
-        self.held_point = None;
     }
 }

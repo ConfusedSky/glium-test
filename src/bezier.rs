@@ -1,9 +1,8 @@
 use bevy_ecs::{
-    change_detection::DetectChanges,
     entity::Entity,
-    query::{self, Changed},
-    system::{Commands, EntityCommands, Query, Res, ResMut, Resource, SystemState},
-    world::{Mut, Ref, World},
+    query::Changed,
+    system::{Commands, EntityCommands, Query, Res, Resource},
+    world::{Mut, World},
 };
 
 use crate::{

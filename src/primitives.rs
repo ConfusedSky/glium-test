@@ -3,7 +3,8 @@ use std::sync::atomic::AtomicUsize;
 use crate::{position::Position, renderer::RenderParams};
 use bevy_ecs::component::Component;
 use glium::{
-    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, Display, DrawParameters, Program, Surface, VertexBuffer
+    dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, Display, DrawParameters,
+    Program, Surface, VertexBuffer,
 };
 
 static DATA_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -34,7 +35,7 @@ implement_vertex!(Vertex, position);
 impl From<Position> for Vertex {
     fn from(value: Position) -> Self {
         Self {
-            position: value.into()
+            position: value.into(),
         }
     }
 }

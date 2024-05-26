@@ -8,12 +8,15 @@ mod selection;
 
 use std::time::SystemTime;
 
-use winit::event::MouseButton;
-
-use bevy_ecs::{schedule::{IntoSystemConfigs, Schedule}, world};
+use bevy_ecs::{
+    schedule::{IntoSystemConfigs, Schedule},
+    world,
+};
 
 use crate::{
-    bezier::update_bezier_curve, mouse::{MouseButtons, MousePosition}, selection::{grab_selection, mouse_moved, HeldItems}
+    bezier::update_bezier_curve,
+    mouse::{MouseButtons, MousePosition},
+    selection::{grab_selection, mouse_moved, HeldItems},
 };
 
 fn main() {
@@ -26,38 +29,7 @@ fn main() {
     println!("{window_size:?}");
     let mut window_size = [window_size.width as f32, window_size.height as f32].into();
 
-    let mut control_points = {
-        #[rustfmt::skip]
-        let control_positions: Vec<_> = [
-            [200.0, 240.0],
-            [400.0, 456.0],
-            [400.0, 24.0],
-            [600.0, 240.0],
-        ].into_iter().map(Into::into).collect();
-
-        let control_points = point::Collection::new(&control_positions, None);
-
-        control_points
-    };
     let follow_points = point::Collection::new(&[], Some(10.0));
-
-    let (bezier_curve, lines) = {
-        let control_points = control_points.get_points();
-
-        let curve_points = bezier::generate_bezier_points(control_points);
-        let bezier_curve =
-            primitives::Primatives::new(&curve_points, primitives::Type::LineStrip, 2.0);
-
-        let line_points: Vec<primitives::Vertex> = control_points
-            .into_iter()
-            .map(|x| *x)
-            .map(Into::into)
-            .collect();
-        // Todo style this better
-        let lines = primitives::Primatives::new(&line_points, primitives::Type::Line, 2.0);
-
-        (bezier_curve, lines)
-    };
 
     let timer = SystemTime::now();
     let mut renderer = renderer::Renderer::new(display);
@@ -89,21 +61,6 @@ fn main() {
                     let position = [position.x as f32, position.y as f32].into();
                     let mut mouse_position = world.resource_mut::<MousePosition>();
                     mouse_position.update(position);
-
-                    // if control_points.mouse_moved(&position, &previous_position) {
-                    // let control_points = control_points.get_points();
-
-                    // let curve_points = bezier::generate_bezier_points(control_points);
-                    // bezier_curve.set_points(&curve_points);
-
-                    // let line_points: Vec<Vertex> = control_points
-                    // .into_iter()
-                    // .map(|x| Vertex {
-                    // position: (*x).into(),
-                    // })
-                    // .collect();
-                    // lines.set_points(&line_points);
-                    // }
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
                     let mut mouse_buttons = world.resource_mut::<MouseButtons>();
