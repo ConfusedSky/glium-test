@@ -1,10 +1,10 @@
 use std::{collections::HashMap, sync::atomic::AtomicUsize};
 
-use crate::{position::Position, Vertex};
+use crate::{RenderParams, Vertex};
 use bevy_ecs::component::Component;
 use glium::{
-    dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program,
-    Surface, VertexBuffer,
+    dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Program, Surface,
+    VertexBuffer,
 };
 
 #[derive(Clone, Copy)]
@@ -68,20 +68,15 @@ impl Renderer {
         }
     }
 
-    pub fn draw(
-        &mut self,
-        display: &Display<WindowSurface>,
-        target: &mut Frame,
-        data: &mut Data,
-        screen_size: &Position,
-    ) {
+    pub fn draw(&mut self, render_params: &mut RenderParams, data: &mut Data) {
         let uniforms = dynamic_uniform! {
-            window_size: screen_size,
+            window_size: render_params.screen_size,
         };
 
         let buffer = {
             if data.dirty || !self.buffers.contains_key(&data.id) {
-                let buffer = glium::VertexBuffer::new(display, &data.primitive_data).unwrap();
+                let buffer =
+                    glium::VertexBuffer::new(render_params.display, &data.primitive_data).unwrap();
                 self.buffers.insert(data.id, buffer);
                 data.dirty = false;
             }
@@ -89,7 +84,8 @@ impl Renderer {
             &self.buffers[&data.id]
         };
 
-        target
+        render_params
+            .target
             .draw(
                 buffer,
                 &glium::index::NoIndices(data.primitive_type.into()),

@@ -1,8 +1,8 @@
-use crate::position::Position;
+use crate::{position::Position, RenderParams};
 use bevy_ecs::component::Component;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
-    Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer,
+    Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
 };
 
 #[derive(Clone, Copy)]
@@ -111,18 +111,18 @@ impl<'a> Renderer<'a> {
         }
     }
 
-    pub fn draw(&self, target: &mut Frame, data: &Data, screen_size: &Position) {
+    pub fn draw(&self, render_params: &mut RenderParams, data: &Data) {
         let color: [f32; 3] = [1.0, 0.0, 0.0];
         let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
 
         for point in &data.points {
             let uniforms = dynamic_uniform! {
                 point_size: &data.point_size,
-                window_size: screen_size,
+                window_size: render_params.screen_size,
                 point_color: if point.hovered { &hover_color } else { &color } ,
                 offset: &point.position,
             };
-            target
+            render_params.target
                 .draw(
                     &self.buffer,
                     &self.indicies,

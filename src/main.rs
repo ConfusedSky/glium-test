@@ -5,7 +5,8 @@ mod primitives;
 
 use std::time::SystemTime;
 
-use glium::{implement_vertex, Surface};
+use glium::{glutin::surface::WindowSurface, implement_vertex, Display, Frame, Surface};
+use position::Position;
 use winit::event::MouseButton;
 
 use bevy_ecs::world;
@@ -15,6 +16,12 @@ struct Vertex {
     position: [f32; 2],
 }
 implement_vertex!(Vertex, position);
+
+struct RenderParams<'a> {
+    pub display: &'a Display<WindowSurface>,
+    pub target: &'a mut Frame,
+    pub screen_size: &'a Position,
+}
 
 fn main() {
     let event_loop = winit::event_loop::EventLoopBuilder::new()
@@ -47,11 +54,7 @@ fn main() {
         let control_points = control_points.get_points();
 
         let curve_points = bezier::generate_bezier_points(control_points);
-        let curve_cloud = primitives::Data::new(
-            &curve_points,
-            primitives::Type::LineStrip,
-            2.0,
-        );
+        let curve_cloud = primitives::Data::new(&curve_points, primitives::Type::LineStrip, 2.0);
 
         let line_points: Vec<Vertex> = control_points
             .into_iter()
@@ -126,10 +129,16 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
-        primitives_renderer.draw(&display, &mut target, &mut lines, &window_size);
-        point_renderer.draw(&mut target, &follow_points, &window_size);
-        primitives_renderer.draw(&display, &mut target, &mut curve_cloud, &window_size);
-        point_renderer.draw(&mut target, &control_points, &window_size);
+        let mut render_params = RenderParams {
+            display: &display,
+            target: &mut target,
+            screen_size: &window_size,
+        };
+
+        primitives_renderer.draw(&mut render_params, &mut lines);
+        point_renderer.draw(&mut render_params, &follow_points);
+        primitives_renderer.draw(&mut render_params, &mut curve_cloud);
+        point_renderer.draw(&mut render_params, &control_points);
 
         target.finish().unwrap();
     });
