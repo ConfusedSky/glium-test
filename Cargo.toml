@@ -9,3 +9,6 @@ edition = "2021"
 bevy_ecs = "0.13.2"
 glium = "0.34.0"
 winit = "0.29.15"
+
+[profile.dev.package."*"]
+opt-level = 3
