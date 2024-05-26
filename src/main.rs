@@ -12,9 +12,12 @@ use std::time::SystemTime;
 use glium::implement_vertex;
 use winit::event::MouseButton;
 
-use bevy_ecs::{schedule::Schedule, world};
+use bevy_ecs::{change_detection::{DetectChanges, DetectChangesMut}, schedule::Schedule, world};
 
-use crate::{mouse::{MouseButtons, MousePosition}, selection::search_for_hovered};
+use crate::{
+    mouse::{MouseButtons, MousePosition},
+    selection::search_for_hovered,
+};
 
 #[derive(Copy, Clone)]
 struct Vertex {

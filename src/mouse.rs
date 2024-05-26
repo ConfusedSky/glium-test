@@ -1,5 +1,5 @@
 use bevy_ecs::system::Resource;
-use winit::event::{ElementState, MouseButton, WindowEvent};
+use winit::event::{ElementState, MouseButton};
 
 use crate::position::Position;
 
@@ -30,7 +30,7 @@ impl MousePosition {
 pub struct MouseButtons {
     left_mouse_pressed: bool,
     left_mouse_down: bool,
-    left_mouse_released: bool
+    left_mouse_released: bool,
 }
 
 impl MouseButtons {

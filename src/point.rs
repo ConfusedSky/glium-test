@@ -160,14 +160,14 @@ impl<'draw> Renderer<'draw> {
         )>();
         let iter = query
             .iter(world)
-            .map(|(position, control_points::Point { size }, hovered)| {
-                RenderData {
+            .map(
+                |(position, control_points::Point { size }, hovered)| RenderData {
                     position: *position,
                     size: *size,
                     hovered: hovered.is_some(),
                     attached_point: None,
-                }
-            });
+                },
+            );
         self.draw_points(render_params, iter);
     }
 }
