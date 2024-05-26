@@ -79,7 +79,7 @@ impl Renderer {
         };
 
         let buffer = {
-            if data.dirty || self.buffers.len() <= data.id || self.buffers[data.id].is_none() {
+            if data.buffer_needs_refresh || self.buffers.len() <= data.id || self.buffers[data.id].is_none() {
                 let buffer =
                     glium::VertexBuffer::new(render_params.display, &data.primitive_data).unwrap();
                 // If the vector is not large enough to contain the new buffer then we resize based on
@@ -93,7 +93,7 @@ impl Renderer {
                 }
 
                 self.buffers[data.id] = Some(buffer);
-                data.dirty = false;
+                data.buffer_needs_refresh = false;
             }
 
             // Safety: Based on above code we can guarentee that we have a buffer that has been created
@@ -123,9 +123,10 @@ impl Renderer {
 pub struct Data {
     id: usize,
     size: f32,
-    primitive_data: Vec<Vertex>,
     primitive_type: Type,
-    dirty: bool,
+
+    primitive_data: Vec<Vertex>,
+    buffer_needs_refresh: bool,
 }
 
 impl Data {
@@ -139,12 +140,12 @@ impl Data {
             size,
             primitive_data,
             primitive_type,
-            dirty: true,
+            buffer_needs_refresh: true,
         }
     }
 
     pub fn set_points(&mut self, points: &[Vertex]) {
         self.primitive_data = points.to_vec();
-        self.dirty = true;
+        self.buffer_needs_refresh = true;
     }
 }
