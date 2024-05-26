@@ -79,7 +79,7 @@ impl Renderer {
         };
 
         let buffer = {
-            if data.dirty || self.buffers.len() <= data.id || self.buffers[data.id].is_none()  {
+            if data.dirty || self.buffers.len() <= data.id || self.buffers[data.id].is_none() {
                 let buffer =
                     glium::VertexBuffer::new(render_params.display, &data.primitive_data).unwrap();
                 // If the vector is not large enough to contain the new buffer then we resize based on
@@ -100,6 +100,12 @@ impl Renderer {
             self.buffers[data.id].as_ref().unwrap()
         };
 
+        let params = DrawParameters {
+            point_size: Some(data.size),
+            line_width: Some(data.size),
+            ..Default::default()
+        };
+
         render_params
             .target
             .draw(
@@ -107,37 +113,31 @@ impl Renderer {
                 &glium::index::NoIndices(data.primitive_type.into()),
                 &self.program,
                 &uniforms,
-                &data.params,
+                &params,
             )
             .unwrap();
     }
 }
 
 #[derive(Component)]
-pub struct Data<'a> {
+pub struct Data {
     id: usize,
+    size: f32,
     primitive_data: Vec<Vertex>,
-    params: DrawParameters<'a>,
     primitive_type: Type,
     dirty: bool,
 }
 
-impl Data<'_> {
+impl Data {
     pub fn new(points: &[Vertex], primitive_type: Type, size: f32) -> Self {
         let id = DATA_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let primitive_data = points.to_vec();
 
-        let params = DrawParameters {
-            point_size: Some(size),
-            line_width: Some(size),
-            ..Default::default()
-        };
-
         Self {
             id,
+            size,
             primitive_data,
-            params,
             primitive_type,
             dirty: true,
         }
