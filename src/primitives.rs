@@ -5,27 +5,27 @@ use glium::{
 };
 
 #[derive(Clone, Copy)]
-pub enum PrimitiveType {
+pub enum Type {
     Point,
     Line,
     LineStrip,
 }
 
-impl From<PrimitiveType> for glium::index::PrimitiveType {
-    fn from(value: PrimitiveType) -> Self {
+impl From<Type> for glium::index::PrimitiveType {
+    fn from(value: Type) -> Self {
         match value {
-            PrimitiveType::Point => Self::Points,
-            PrimitiveType::Line => Self::LinesList,
-            PrimitiveType::LineStrip => Self::LineStrip,
+            Type::Point => Self::Points,
+            Type::Line => Self::LinesList,
+            Type::LineStrip => Self::LineStrip,
         }
     }
 }
 
-pub struct PrimitivesRenderer {
+pub struct Renderer {
     program: Program,
 }
 
-impl PrimitivesRenderer {
+impl Renderer {
     pub fn new(display: &Display<WindowSurface>) -> Self {
         let vertex_shader_src = r#"#version 400
 
@@ -61,7 +61,7 @@ impl PrimitivesRenderer {
         Self { program }
     }
 
-    pub fn draw(&self, target: &mut Frame, data: &PrimitivesData, screen_size: &Position) {
+    pub fn draw(&self, target: &mut Frame, data: &Data, screen_size: &Position) {
         let uniforms = dynamic_uniform! {
             window_size: screen_size,
         };
@@ -78,17 +78,17 @@ impl PrimitivesRenderer {
     }
 }
 
-pub struct PrimitivesData<'a> {
+pub struct Data<'a> {
     buffer: VertexBuffer<Vertex>,
     params: DrawParameters<'a>,
-    primitive_type: PrimitiveType,
+    primitive_type: Type,
 }
 
-impl<'a> PrimitivesData<'a> {
+impl<'a> Data<'a> {
     pub fn new(
         display: &Display<WindowSurface>,
         points: &[Vertex],
-        primitive_type: PrimitiveType,
+        primitive_type: Type,
         size: f32,
     ) -> Self {
         let buffer = glium::VertexBuffer::new(display, &points).unwrap();
