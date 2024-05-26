@@ -27,7 +27,7 @@ pub fn search_for_hovered(
     }
 
     for (entity, position, hoverable, hovered) in query.iter() {
-        let distance_squared = position.distance_squared(&mouse_position.position);
+        let distance_squared = position.distance_squared(&mouse_position.position());
         let radius_squared = hoverable.radius.powi(2);
 
         // If we are in range the commponent under the

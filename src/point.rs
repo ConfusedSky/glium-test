@@ -1,5 +1,5 @@
-use crate::{position::Position, renderer::RenderParams};
-use bevy_ecs::component::Component;
+use crate::{control_points, position::Position, renderer::RenderParams, selection};
+use bevy_ecs::{component::Component, world::World};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
     Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
@@ -12,7 +12,7 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, uv);
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct RenderData {
     pub position: Position,
     pub size: f32,
@@ -117,7 +117,7 @@ impl<'draw> Renderer<'draw> {
     // than render single point
     pub fn draw_points<'a, It>(&self, render_params: &mut RenderParams, data: It)
     where
-        It: IntoIterator<Item = &'a RenderData>,
+        It: IntoIterator<Item = RenderData>,
     {
         let color: [f32; 3] = [1.0, 0.0, 0.0];
         let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
@@ -144,15 +144,31 @@ impl<'draw> Renderer<'draw> {
 
     #[allow(dead_code)]
     pub fn draw(&self, render_params: &mut RenderParams, data: &Collection) {
-        self.draw_points(render_params, &data.points);
+        self.draw_points(render_params, data.points.iter().cloned());
     }
 
     #[allow(dead_code)]
     pub fn draw_single(&self, render_params: &mut RenderParams, data: RenderData) {
-        self.draw_points(
-            render_params,
-            &[data],
-        );
+        self.draw_points(render_params, [data]);
+    }
+
+    pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
+        let mut query = world.query::<(
+            &Position,
+            &control_points::Point,
+            Option<&selection::Hovered>,
+        )>();
+        let iter = query
+            .iter(world)
+            .map(|(position, control_points::Point { size }, hovered)| {
+                RenderData {
+                    position: *position,
+                    size: *size,
+                    hovered: hovered.is_some(),
+                    attached_point: None,
+                }
+            });
+        self.draw_points(render_params, iter);
     }
 }
 

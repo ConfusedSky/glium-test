@@ -1,7 +1,7 @@
 use bevy_ecs::world::World;
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
 
-use crate::{control_points, point, position::Position, primitives, selection};
+use crate::{point, position::Position, primitives};
 
 pub struct RenderParams<'a> {
     pub display: &'a Display<WindowSurface>,
@@ -46,18 +46,8 @@ impl Renderer<'_> {
         // self.points_renderer.draw(&mut render_params, &mut data);
         // }
 
-        let mut query = world.query::<(&Position, &control_points::Point, Option<&selection::Hovered>)>();
-        for (position, control_points::Point { size }, hovered) in query.iter(world) {
-            self.points_renderer.draw_single(
-                &mut render_params,
-                point::RenderData {
-                    position: *position,
-                    size: *size,
-                    hovered: hovered.is_some(),
-                    attached_point: None,
-                },
-            );
-        }
+        self.points_renderer
+            .draw_from_world(&mut render_params, world);
 
         target.finish().unwrap();
     }

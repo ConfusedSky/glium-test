@@ -107,8 +107,7 @@ fn main() {
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32].into();
                     let mut mouse_position = world.resource_mut::<MousePosition>();
-                    mouse_position.previous_position = mouse_position.position;
-                    mouse_position.position = position;
+                    mouse_position.update(position);
 
                     // if control_points.mouse_moved(&position, &previous_position) {
                     // let control_points = control_points.get_points();
