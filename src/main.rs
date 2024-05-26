@@ -50,11 +50,11 @@ fn main() {
 
     let mut previous_position = None;
 
-    let (mut curve_cloud, mut lines) = {
+    let (mut bezier_curve, mut lines) = {
         let control_points = control_points.get_points();
 
         let curve_points = bezier::generate_bezier_points(control_points);
-        let curve_cloud = primitives::Data::new(&curve_points, primitives::Type::LineStrip, 2.0);
+        let bezier_curve = primitives::Data::new(&curve_points, primitives::Type::LineStrip, 2.0);
 
         let line_points: Vec<Vertex> = control_points
             .into_iter()
@@ -65,7 +65,7 @@ fn main() {
         // Todo style this better
         let lines = primitives::Data::new(&line_points, primitives::Type::Line, 2.0);
 
-        (curve_cloud, lines)
+        (bezier_curve, lines)
     };
 
     let timer = SystemTime::now();
@@ -91,7 +91,7 @@ fn main() {
                         let control_points = control_points.get_points();
 
                         let curve_points = bezier::generate_bezier_points(control_points);
-                        curve_cloud.set_points(&curve_points);
+                        bezier_curve.set_points(&curve_points);
 
                         let line_points: Vec<Vertex> = control_points
                             .into_iter()
@@ -136,8 +136,8 @@ fn main() {
         };
 
         primitives_renderer.draw(&mut render_params, &mut lines);
+        primitives_renderer.draw(&mut render_params, &mut bezier_curve);
         point_renderer.draw(&mut render_params, &follow_points);
-        primitives_renderer.draw(&mut render_params, &mut curve_cloud);
         point_renderer.draw(&mut render_params, &control_points);
 
         target.finish().unwrap();
