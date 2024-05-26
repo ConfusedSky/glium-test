@@ -1,4 +1,5 @@
 use crate::position::Position;
+use bevy_ecs::component::Component;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
     Display, DrawParameters, Frame, IndexBuffer, Program, Surface, VertexBuffer,
@@ -134,6 +135,7 @@ impl<'a> Renderer<'a> {
     }
 }
 
+#[derive(Component)]
 pub struct Data {
     /// Point objects for each point to render
     points: Vec<Point>,

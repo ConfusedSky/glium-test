@@ -8,6 +8,8 @@ use std::time::SystemTime;
 use glium::{implement_vertex, Surface};
 use winit::event::MouseButton;
 
+use bevy_ecs::world;
+
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
@@ -46,7 +48,6 @@ fn main() {
 
         let curve_points = bezier::generate_bezier_points(control_points);
         let curve_cloud = primitives::Data::new(
-            &display,
             &curve_points,
             primitives::Type::LineStrip,
             2.0,
@@ -59,14 +60,17 @@ fn main() {
             })
             .collect();
         // Todo style this better
-        let lines = primitives::Data::new(&display, &line_points, primitives::Type::Line, 2.0);
+        let lines = primitives::Data::new(&line_points, primitives::Type::Line, 2.0);
 
         (curve_cloud, lines)
     };
 
     let timer = SystemTime::now();
-    let primitives_renderer = primitives::Renderer::new(&display);
+    let mut primitives_renderer = primitives::Renderer::new(&display);
     let point_renderer = point::Renderer::new(&display);
+
+    let mut _world = world::World::new();
+    // world.spawn(follow_points);
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -84,7 +88,7 @@ fn main() {
                         let control_points = control_points.get_points();
 
                         let curve_points = bezier::generate_bezier_points(control_points);
-                        curve_cloud.set_points(&display, &curve_points);
+                        curve_cloud.set_points(&curve_points);
 
                         let line_points: Vec<Vertex> = control_points
                             .into_iter()
@@ -92,7 +96,7 @@ fn main() {
                                 position: (*x).into(),
                             })
                             .collect();
-                        lines.set_points(&display, &line_points);
+                        lines.set_points(&line_points);
                     }
 
                     previous_position = Some(position);
@@ -122,9 +126,9 @@ fn main() {
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
-        primitives_renderer.draw(&mut target, &lines, &window_size);
+        primitives_renderer.draw(&display, &mut target, &mut lines, &window_size);
         point_renderer.draw(&mut target, &follow_points, &window_size);
-        primitives_renderer.draw(&mut target, &curve_cloud, &window_size);
+        primitives_renderer.draw(&display, &mut target, &mut curve_cloud, &window_size);
         point_renderer.draw(&mut target, &control_points, &window_size);
 
         target.finish().unwrap();

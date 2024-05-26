@@ -1,4 +1,7 @@
+use std::{collections::HashMap, sync::atomic::AtomicUsize};
+
 use crate::{position::Position, Vertex};
+use bevy_ecs::component::Component;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Frame, Program,
     Surface, VertexBuffer,
@@ -23,6 +26,7 @@ impl From<Type> for glium::index::PrimitiveType {
 
 pub struct Renderer {
     program: Program,
+    buffers: HashMap<usize, VertexBuffer<Vertex>>,
 }
 
 impl Renderer {
@@ -58,17 +62,36 @@ impl Renderer {
 
         let program = glium::Program::new(display, source).unwrap();
 
-        Self { program }
+        Self {
+            buffers: Default::default(),
+            program,
+        }
     }
 
-    pub fn draw(&self, target: &mut Frame, data: &Data, screen_size: &Position) {
+    pub fn draw(
+        &mut self,
+        display: &Display<WindowSurface>,
+        target: &mut Frame,
+        data: &mut Data,
+        screen_size: &Position,
+    ) {
         let uniforms = dynamic_uniform! {
             window_size: screen_size,
         };
 
+        let buffer = {
+            if data.dirty || !self.buffers.contains_key(&data.id) {
+                let buffer = glium::VertexBuffer::new(display, &data.primitive_data).unwrap();
+                self.buffers.insert(data.id, buffer);
+                data.dirty = false;
+            }
+
+            &self.buffers[&data.id]
+        };
+
         target
             .draw(
-                &data.buffer,
+                buffer,
                 &glium::index::NoIndices(data.primitive_type.into()),
                 &self.program,
                 &uniforms,
@@ -78,21 +101,21 @@ impl Renderer {
     }
 }
 
+#[derive(Component)]
 pub struct Data<'a> {
-    buffer: VertexBuffer<Vertex>,
+    id: usize,
+    primitive_data: Vec<Vertex>,
     params: DrawParameters<'a>,
     primitive_type: Type,
+    dirty: bool,
 }
 
-impl<'a> Data<'a> {
-    pub fn new(
-        display: &Display<WindowSurface>,
-        points: &[Vertex],
-        primitive_type: Type,
-        size: f32,
-    ) -> Self {
-        let buffer = glium::VertexBuffer::new(display, &points).unwrap();
+impl Data<'_> {
+    pub fn new(points: &[Vertex], primitive_type: Type, size: f32) -> Self {
+        static ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+        let id = ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
+        let primitive_data = points.to_vec();
 
         let params = DrawParameters {
             point_size: Some(size),
@@ -101,14 +124,16 @@ impl<'a> Data<'a> {
         };
 
         Self {
-            buffer,
+            id,
+            primitive_data,
             params,
             primitive_type,
+            dirty: true,
         }
     }
 
-    pub fn set_points(&mut self, display: &Display<WindowSurface>, points: &[Vertex]) {
-        self.buffer = glium::VertexBuffer::new(display, &points).unwrap();
+    pub fn set_points(&mut self, points: &[Vertex]) {
+        self.primitive_data = points.to_vec();
+        self.dirty = true;
     }
-
 }
