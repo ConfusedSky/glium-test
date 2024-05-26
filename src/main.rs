@@ -42,6 +42,7 @@ fn main() {
     world.insert_resource::<MousePosition>(Default::default());
     world.insert_resource::<MouseButtons>(Default::default());
     world.insert_resource::<HeldItems>(Default::default());
+    world.spawn(follow_points);
 
     let mut schedule: Schedule = Default::default();
     schedule.add_systems((mouse_moved, grab_selection));
@@ -73,16 +74,7 @@ fn main() {
 
         schedule.run(&mut world);
 
-        // let elapsed = timer.elapsed().unwrap().as_secs_f64() / 4.0;
-
-        // let p = bezier::generate_bezier_points_with_offset(
-        // control_points.get_points(),
-        // Some(5),
-        // Some(elapsed),
-        // );
-        // follow_points.set_points(&p);
-
-        renderer.draw(&mut world, &window_size);
+        renderer.draw(&mut world, &window_size, &timer);
 
         let mut mouse_buttons = world.resource_mut::<MouseButtons>();
         if mouse_buttons.needs_end_frame() {
