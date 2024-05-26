@@ -1,4 +1,4 @@
-use crate::{bezier, position::Position, renderer::RenderParams, selection};
+use crate::{position::Position, renderer::RenderParams, selection};
 use bevy_ecs::{component::Component, world::World};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
@@ -18,6 +18,12 @@ pub struct RenderData {
     pub size: f32,
     pub hovered: bool,
     pub attached_point: Option<usize>,
+}
+
+// Move this back over to point.rs after the refactor is complete
+#[derive(Component)]
+pub struct Point {
+    pub size: f32,
 }
 
 pub struct Renderer<'draw> {
@@ -153,10 +159,10 @@ impl<'draw> Renderer<'draw> {
     }
 
     pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
-        let mut query = world.query::<(&Position, &bezier::Point, Option<&selection::Hovered>)>();
+        let mut query = world.query::<(&Position, &Point, Option<&selection::Hovered>)>();
         let iter = query
             .iter(world)
-            .map(|(position, bezier::Point { size }, hovered)| RenderData {
+            .map(|(position, Point { size }, hovered)| RenderData {
                 position: *position,
                 size: *size,
                 hovered: hovered.is_some(),

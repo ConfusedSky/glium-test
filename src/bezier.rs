@@ -1,13 +1,10 @@
 use bevy_ecs::{
-    component::Component,
     entity::Entity,
     system::{Commands, EntityCommands, Resource},
 };
 
 use crate::{
-    position::Position,
-    selection::{Connection, Draggable, Hoverable},
-    Vertex,
+    point::Point, position::Position, selection::{Connection, Draggable, Hoverable}, Vertex
 };
 
 fn bezier(
@@ -75,12 +72,6 @@ pub struct BezierCurve {
 
 #[derive(Resource)]
 pub struct ControlPointArray(pub [Position; 4]);
-
-// Move this back over to point.rs after the refactor is complete
-#[derive(Component)]
-pub struct Point {
-    pub size: f32,
-}
 
 fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
     commands.spawn((
