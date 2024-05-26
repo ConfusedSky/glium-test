@@ -9,22 +9,13 @@ use std::time::SystemTime;
 use glium::implement_vertex;
 use winit::event::MouseButton;
 
-use bevy_ecs::{component::Component, query::With, world};
+use bevy_ecs::world;
 
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
 }
 implement_vertex!(Vertex, position);
-
-#[derive(Component)]
-struct FollowPoints;
-#[derive(Component)]
-struct ControlPoints;
-#[derive(Component)]
-struct Lines;
-#[derive(Component)]
-struct BezierCurve;
 
 fn main() {
     let event_loop = winit::event_loop::EventLoopBuilder::new()
@@ -75,12 +66,20 @@ fn main() {
     let mut renderer = renderer::Renderer::new(display);
 
     let mut world = world::World::new();
-    world.spawn((control_points, ControlPoints));
-    world.spawn((follow_points, FollowPoints));
-    world.spawn((lines, Lines));
-    world.spawn((bezier_curve, BezierCurve));
+    let control_points = world.spawn(control_points).id();
+    let follow_points = world.spawn(follow_points).id();
+    let lines = world.spawn(lines).id();
+    let bezier_curve = world.spawn(bezier_curve).id();
 
     let _ = event_loop.run(move |event, window_target| {
+        let [mut control_points, mut follow_points, mut lines, mut bezier_curve] = world
+            .get_many_entities_mut([control_points, follow_points, lines, bezier_curve])
+            .unwrap();
+        let mut control_points = control_points.get_mut::<point::Data>().unwrap();
+        let mut follow_points = follow_points.get_mut::<point::Data>().unwrap();
+        let mut lines = lines.get_mut::<primitives::Data>().unwrap();
+        let mut bezier_curve = bezier_curve.get_mut::<primitives::Data>().unwrap();
+
         match event {
             winit::event::Event::WindowEvent { event, .. } => match event {
                 winit::event::WindowEvent::CloseRequested => window_target.exit(),
@@ -92,28 +91,19 @@ fn main() {
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32].into();
-                    let mut control_points = world
-                        .query_filtered::<&mut point::Data, With<ControlPoints>>()
-                        .single_mut(&mut world);
+
                     if control_points.mouse_moved(&position, &previous_position) {
                         let control_points = control_points.get_points();
 
                         let curve_points = bezier::generate_bezier_points(control_points);
+                        bezier_curve.set_points(&curve_points);
+
                         let line_points: Vec<Vertex> = control_points
                             .into_iter()
                             .map(|x| Vertex {
                                 position: (*x).into(),
                             })
                             .collect();
-
-                        let mut bezier_curve = world
-                            .query_filtered::<&mut primitives::Data, With<BezierCurve>>()
-                            .single_mut(&mut world);
-                        bezier_curve.set_points(&curve_points);
-
-                        let mut lines = world
-                            .query_filtered::<&mut primitives::Data, With<Lines>>()
-                            .single_mut(&mut world);
                         lines.set_points(&line_points);
                     }
 
@@ -121,10 +111,6 @@ fn main() {
                 }
                 winit::event::WindowEvent::MouseInput { state, button, .. } => {
                     if button == MouseButton::Left {
-                        let mut control_points = world
-                            .query_filtered::<&mut point::Data, With<ControlPoints>>()
-                            .single_mut(&mut world);
-
                         if state.is_pressed() {
                             control_points.click();
                         } else {
@@ -139,17 +125,11 @@ fn main() {
 
         let elapsed = timer.elapsed().unwrap().as_secs_f64() / 4.0;
 
-        let mut control_points = world
-            .query_filtered::<&mut point::Data, With<ControlPoints>>()
-            .single_mut(&mut world);
         let p = bezier::generate_bezier_points_with_offset(
             control_points.get_points(),
             Some(5),
             Some(elapsed),
         );
-        let mut follow_points = world
-            .query_filtered::<&mut point::Data, With<FollowPoints>>()
-            .single_mut(&mut world);
         follow_points.set_points(&p);
 
         renderer.draw(&mut world, &window_size);
