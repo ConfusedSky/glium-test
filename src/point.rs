@@ -1,4 +1,4 @@
-use crate::{position::Position, RenderParams};
+use crate::{position::Position, renderer::RenderParams};
 use bevy_ecs::component::Component;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
@@ -122,7 +122,8 @@ impl<'a> Renderer<'a> {
                 point_color: if point.hovered { &hover_color } else { &color } ,
                 offset: &point.position,
             };
-            render_params.target
+            render_params
+                .target
                 .draw(
                     &self.buffer,
                     &self.indicies,
@@ -230,5 +231,4 @@ impl Data {
     pub fn release(&mut self) {
         self.held_point = None;
     }
-
 }

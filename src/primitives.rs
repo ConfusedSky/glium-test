@@ -1,6 +1,6 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::{RenderParams, Vertex};
+use crate::{renderer::RenderParams, Vertex};
 use bevy_ecs::component::Component;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, Display, DrawParameters, Program, Surface,
@@ -79,7 +79,10 @@ impl Renderer {
         };
 
         let buffer = {
-            if data.buffer_needs_refresh || self.buffers.len() <= data.id || self.buffers[data.id].is_none() {
+            if data.buffer_needs_refresh
+                || self.buffers.len() <= data.id
+                || self.buffers[data.id].is_none()
+            {
                 let buffer =
                     glium::VertexBuffer::new(render_params.display, &data.primitive_data).unwrap();
                 // If the vector is not large enough to contain the new buffer then we resize based on

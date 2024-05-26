@@ -19,7 +19,7 @@ impl Position {
 
         x.powi(2) + y.powi(2)
     }
-    
+
     pub fn lerp(this: Self, other: Self, t: f64) -> Self {
         let x = this.x() as f64 * (1. - t) + other.x() as f64 * t;
         let y = this.y() as f64 * (1. - t) + other.y() as f64 * t;
