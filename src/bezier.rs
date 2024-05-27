@@ -15,6 +15,8 @@ use crate::{
     System,
 };
 
+/// Calculates a point t along a bezier curve
+/// t must be 0 <= t < 1
 fn bezier(
     start_point: Position,
     start_handle: Position,
@@ -22,6 +24,9 @@ fn bezier(
     end_point: Position,
     t: f64,
 ) -> Position {
+    assert!(t >= 0.0);
+    assert!(t < 1.0);
+
     let t_inv = 1.0 - t;
     let t1 = t_inv.powi(3);
     let t2 = 3.0 * t_inv.powi(2) * t;
