@@ -1,12 +1,7 @@
-use bevy_ecs::{system::Command, world::World};
+use bevy_ecs::world::World;
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
 
-use crate::{
-    bezier::{self, BezierCurve},
-    point::{self, DrawPoint},
-    position::Position,
-    primitives, System,
-};
+use crate::{point, position::Position, primitives};
 
 pub struct RenderParams<'a> {
     pub display: &'a Display<WindowSurface>,
@@ -40,20 +35,6 @@ impl Renderer<'_> {
             target: &mut target,
             screen_size: &window_size,
         };
-
-        {
-            let elapsed = world.resource::<System>().elapsed / 4.0;
-            let points = world.resource::<BezierCurve>().clone().get_points(world);
-
-            let p = bezier::generate_bezier_points_with_offset(&points, Some(10), Some(elapsed));
-            for point in p {
-                let command = DrawPoint {
-                    position: point,
-                    size: 10.0,
-                };
-                command.apply(world);
-            }
-        }
 
         let mut query = world.query::<&mut primitives::Primatives>();
         for mut data in query.iter_mut(world) {

@@ -2,14 +2,14 @@ use bevy_ecs::{
     change_detection::DetectChanges,
     entity::Entity,
     system::{Commands, EntityCommands, Query, Res, Resource},
-    world::{Ref, World},
+    world::Ref,
 };
 
 use crate::{
-    point::Point,
+    point::{self, Point},
     position::Position,
     primitives,
-    selection::{Connection, Draggable, Hoverable},
+    selection::{Connection, Draggable, Hoverable}, System,
 };
 
 fn bezier(
@@ -73,26 +73,6 @@ pub struct BezierCurve {
     pub curve: Entity,
 }
 
-impl BezierCurve {
-    pub fn get_points<'a>(&self, world: &mut World) -> Vec<Position> {
-        world
-            .query::<&Position>()
-            .get_many(
-                world,
-                [
-                    self.start_point,
-                    self.start_handle,
-                    self.end_handle,
-                    self.end_point,
-                ],
-            )
-            .unwrap()
-            .into_iter()
-            .cloned()
-            .collect()
-    }
-}
-
 fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
     commands.spawn((
         Position::new(x, y),
@@ -131,9 +111,11 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
 }
 
 pub fn update_bezier_curve(
+    mut commands: Commands,
     positions_query: Query<Ref<Position>>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     bezier_curve: Res<BezierCurve>,
+    system: Res<System>,
 ) {
     let bezier_curve = bezier_curve.clone();
 
@@ -158,6 +140,16 @@ pub fn update_bezier_curve(
 
         control_points.push(point.as_ref().clone());
     }
+    // We always want to update the curve follower
+    let elapsed = system.elapsed / 4.0;
+    let p = generate_bezier_points_with_offset(&control_points, Some(10), Some(elapsed));
+    for point in p {
+        let draw_command = point::DrawPoint {
+            position: point,
+            size: 10.0,
+        };
+        commands.add(draw_command);
+    }
 
     // If any of the curve points have been changed we need to update the curve parts
     if !has_change {
@@ -171,5 +163,4 @@ pub fn update_bezier_curve(
 
     let curve_points: Vec<_> = generate_bezier_points(&control_points);
     curve.set_positions(&curve_points);
-
 }
