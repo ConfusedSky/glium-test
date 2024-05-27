@@ -1,5 +1,9 @@
 use crate::{position::Position, renderer::RenderParams, selection};
-use bevy_ecs::{component::Component, world::World};
+use bevy_ecs::{
+    component::Component,
+    system::{Command, Resource},
+    world::{Mut, World},
+};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, index::PrimitiveType,
     Display, DrawParameters, IndexBuffer, Program, Surface, VertexBuffer,
@@ -23,6 +27,27 @@ pub struct RenderData {
 #[derive(Component)]
 pub struct Point {
     pub size: f32,
+}
+
+#[derive(Resource, Default)]
+pub struct FrameData {
+    buffer: Vec<RenderData>,
+}
+
+pub struct DrawPoint {
+    pub position: Position,
+    pub size: f32,
+}
+
+impl Command for DrawPoint {
+    fn apply(self, world: &mut World) {
+        let mut frame_data = world.resource_mut::<FrameData>();
+        frame_data.buffer.push(RenderData {
+            position: self.position,
+            size: self.size,
+            hovered: false,
+        })
+    }
 }
 
 pub struct Renderer<'draw> {
@@ -158,6 +183,7 @@ impl<'draw> Renderer<'draw> {
     }
 
     pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
+        // Draw all points from ecs
         let mut query = world.query::<(&Position, &Point, Option<&selection::Hovered>)>();
         let iter = query
             .iter(world)
@@ -166,6 +192,14 @@ impl<'draw> Renderer<'draw> {
                 size: *size,
                 hovered: hovered.is_some(),
             });
+        self.draw_points(render_params, iter);
+
+        // Draw single frame points
+        let mut frame_points: Mut<FrameData> = world.resource_mut();
+
+        // We use drain here so we can remove all elements from the buffer _and_
+        // we don't have to do any copying
+        let iter = frame_points.buffer.drain(..);
         self.draw_points(render_params, iter);
     }
 }

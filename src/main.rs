@@ -17,6 +17,7 @@ use bevy_ecs::{
 use crate::{
     bezier::update_bezier_curve,
     mouse::{MouseButtons, MousePosition},
+    point::FrameData,
     position::Position,
     selection::{grab_selection, mouse_moved, HeldItems},
 };
@@ -50,6 +51,7 @@ fn main() {
     world.init_resource::<MouseButtons>();
     world.init_resource::<HeldItems>();
     world.init_resource::<System>();
+    world.init_resource::<FrameData>();
     world.spawn(follow_points);
 
     let mut schedule: Schedule = Default::default();
@@ -80,8 +82,7 @@ fn main() {
             _ => (),
         };
 
-        world.get_resource_mut::<System>().unwrap().elapsed =
-            timer.elapsed().unwrap().as_secs_f64();
+        world.resource_mut::<System>().elapsed = timer.elapsed().unwrap().as_secs_f64();
 
         schedule.run(&mut world);
 

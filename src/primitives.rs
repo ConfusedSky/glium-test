@@ -111,7 +111,8 @@ impl Renderer {
                     buffer.write(&data.primitive_data);
                 } else {
                     let buffer =
-                        glium::VertexBuffer::dynamic(render_params.display, &data.primitive_data).unwrap();
+                        glium::VertexBuffer::dynamic(render_params.display, &data.primitive_data)
+                            .unwrap();
 
                     self.buffers[data.id] = Some(buffer);
                 }
