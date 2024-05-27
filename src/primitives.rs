@@ -27,7 +27,7 @@ impl From<Type> for glium::index::PrimitiveType {
 }
 
 #[derive(Copy, Clone)]
-pub struct Vertex {
+struct Vertex {
     position: [f32; 2],
 }
 implement_vertex!(Vertex, position);
@@ -147,10 +147,10 @@ pub struct Primatives {
 }
 
 impl Primatives {
-    pub fn new(points: &[Vertex], primitive_type: Type, size: f32) -> Self {
+    pub fn new(positions: &[Position], primitive_type: Type, size: f32) -> Self {
         let id = DATA_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
-        let primitive_data = points.to_vec();
+        let primitive_data = positions.into_iter().map(|&x| Vertex::from(x)).collect();
 
         Self {
             id,
@@ -161,8 +161,8 @@ impl Primatives {
         }
     }
 
-    pub fn set_points(&mut self, points: &[Vertex]) {
-        self.primitive_data = points.to_vec();
+    pub fn set_positions(&mut self, positions: &[Position]) {
+        self.primitive_data = positions.into_iter().map(|&x| Vertex::from(x)).collect();
         self.buffer_needs_refresh = true;
     }
 }

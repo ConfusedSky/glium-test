@@ -93,19 +93,12 @@ impl BezierCurve {
 
     fn update_handles(&self, world: &mut World, points: &[Position]) {
         let mut handles: Mut<primitives::Primatives> = world.get_mut(self.handles).unwrap();
-        let handle_points: Vec<primitives::Vertex> = points
-            .into_iter()
-            .map(|x| primitives::Vertex::from(*x))
-            .collect();
-        handles.set_points(&handle_points);
+        handles.set_positions(points);
     }
     fn update_curve(&self, world: &mut World, points: &[Position]) {
         let mut curve: Mut<primitives::Primatives> = world.get_mut(self.curve).unwrap();
-        let curve_points: Vec<_> = generate_bezier_points(points)
-            .into_iter()
-            .map(primitives::Vertex::from)
-            .collect();
-        curve.set_points(&curve_points);
+        let curve_points: Vec<_> = generate_bezier_points(points);
+        curve.set_positions(&curve_points);
     }
 
     pub fn update(&self, world: &mut World) {
