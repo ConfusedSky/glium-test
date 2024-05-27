@@ -1,8 +1,8 @@
 use bevy_ecs::{
+    change_detection::DetectChanges,
     entity::Entity,
-    query::Changed,
     system::{Commands, EntityCommands, Query, Res, Resource},
-    world::{Mut, World},
+    world::{Ref, World},
 };
 
 use crate::{
@@ -91,23 +91,6 @@ impl BezierCurve {
             .cloned()
             .collect()
     }
-
-    fn update_handles(&self, world: &mut World, points: &[Position]) {
-        let mut handles: Mut<primitives::Primatives> = world.get_mut(self.handles).unwrap();
-        handles.set_positions(points);
-    }
-    fn update_curve(&self, world: &mut World, points: &[Position]) {
-        let mut curve: Mut<primitives::Primatives> = world.get_mut(self.curve).unwrap();
-        let curve_points: Vec<_> = generate_bezier_points(points);
-        curve.set_positions(&curve_points);
-    }
-
-    pub fn update(&self, world: &mut World) {
-        let points = self.get_points(world);
-
-        self.update_handles(world, &points);
-        self.update_curve(world, &points);
-    }
 }
 
 fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
@@ -144,32 +127,49 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
         handles,
         curve,
     };
-    commands.add(move |world: &mut World| {
-        resource.update(world);
-        world.insert_resource(resource);
-    });
+    commands.insert_resource(resource);
 }
 
 pub fn update_bezier_curve(
-    mut commands: Commands,
-    query: Query<(), Changed<Position>>,
+    positions_query: Query<Ref<Position>>,
+    mut primitives_query: Query<&mut primitives::Primatives>,
     bezier_curve: Res<BezierCurve>,
 ) {
     let bezier_curve = bezier_curve.clone();
 
     // Look at each point if any of them have a position that has changed
-    let curve_changed = query
+    let curve_points: Vec<_> = positions_query
         .iter_many([
             bezier_curve.start_point,
             bezier_curve.start_handle,
             bezier_curve.end_handle,
             bezier_curve.end_point,
         ])
-        .next();
+        .collect();
 
-    if curve_changed.is_some() {
-        commands.add(move |world: &mut World| {
-            bezier_curve.update(world);
-        });
+    let mut has_change = false;
+
+    let mut control_points: Vec<_> = Vec::with_capacity(4);
+
+    for point in curve_points {
+        if point.is_changed() {
+            has_change = true;
+        }
+
+        control_points.push(point.as_ref().clone());
     }
+
+    // If any of the curve points have been changed we need to update the curve parts
+    if !has_change {
+        return;
+    }
+
+    let [mut handles, mut curve] =
+        primitives_query.many_mut([bezier_curve.handles, bezier_curve.curve]);
+
+    handles.set_positions(&control_points);
+
+    let curve_points: Vec<_> = generate_bezier_points(&control_points);
+    curve.set_positions(&curve_points);
+
 }
