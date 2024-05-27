@@ -10,6 +10,7 @@ use std::time::SystemTime;
 
 use bevy_ecs::{
     schedule::{IntoSystemConfigs, Schedule},
+    system::Resource,
     world,
 };
 
@@ -19,6 +20,11 @@ use crate::{
     position::Position,
     selection::{grab_selection, mouse_moved, HeldItems},
 };
+
+#[derive(Resource, Default)]
+struct System {
+    elapsed: f64,
+}
 
 fn main() {
     let event_loop = winit::event_loop::EventLoopBuilder::new()
@@ -40,9 +46,10 @@ fn main() {
     world
         .run_system(initialize_points)
         .expect("Control points weren't successfully initialized");
-    world.insert_resource::<MousePosition>(Default::default());
-    world.insert_resource::<MouseButtons>(Default::default());
-    world.insert_resource::<HeldItems>(Default::default());
+    world.init_resource::<MousePosition>();
+    world.init_resource::<MouseButtons>();
+    world.init_resource::<HeldItems>();
+    world.init_resource::<System>();
     world.spawn(follow_points);
 
     let mut schedule: Schedule = Default::default();
@@ -73,9 +80,12 @@ fn main() {
             _ => (),
         };
 
+        world.get_resource_mut::<System>().unwrap().elapsed =
+            timer.elapsed().unwrap().as_secs_f64();
+
         schedule.run(&mut world);
 
-        renderer.draw(&mut world, &window_size, &timer);
+        renderer.draw(&mut world, &window_size);
 
         let mut mouse_buttons = world.resource_mut::<MouseButtons>();
         if mouse_buttons.needs_end_frame() {
