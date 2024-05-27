@@ -97,8 +97,6 @@ impl Renderer {
                 || self.buffers.len() <= data.id
                 || self.buffers[data.id].is_none()
             {
-                let buffer =
-                    glium::VertexBuffer::new(render_params.display, &data.primitive_data).unwrap();
                 // If the vector is not large enough to contain the new buffer then we resize based on
                 // the largeset id we have available
                 // Note: with this solution if we create and delete primitive data objects enough
@@ -109,7 +107,15 @@ impl Renderer {
                     self.buffers.resize_with(largest, || None);
                 }
 
-                self.buffers[data.id] = Some(buffer);
+                if let Some(ref mut buffer) = self.buffers[data.id] {
+                    buffer.write(&data.primitive_data);
+                } else {
+                    let buffer =
+                        glium::VertexBuffer::dynamic(render_params.display, &data.primitive_data).unwrap();
+
+                    self.buffers[data.id] = Some(buffer);
+                }
+
                 data.buffer_needs_refresh = false;
             }
 
