@@ -1,6 +1,7 @@
 use std::sync::atomic::AtomicUsize;
 
-use crate::{position::Position, renderer::RenderParams};
+use super::renderer::RenderParams;
+use crate::position::Position;
 use bevy_ecs::component::Component;
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, Display, DrawParameters,

@@ -1,4 +1,5 @@
-use crate::{position::Position, renderer::RenderParams, selection};
+use super::renderer::RenderParams;
+use crate::{position::Position, selection};
 use bevy_ecs::{
     component::Component,
     system::{Command, Resource},

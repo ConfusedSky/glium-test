@@ -1,9 +1,7 @@
 mod bezier;
 mod mouse;
-mod point;
 mod position;
-mod primitives;
-mod renderer;
+mod rendering;
 mod selection;
 
 use std::time::SystemTime;
@@ -17,8 +15,8 @@ use bevy_ecs::{
 use crate::{
     bezier::update_bezier_curve,
     mouse::{MouseButtons, MousePosition},
-    point::FrameData,
     position::Position,
+    rendering::point::FrameData,
     selection::{grab_selection, mouse_moved, HeldItems},
 };
 
@@ -38,7 +36,7 @@ fn main() {
     let mut window_size = Position::from([window_size.width as f32, window_size.height as f32]);
 
     let timer = SystemTime::now();
-    let mut renderer = renderer::Renderer::new(display);
+    let mut renderer = rendering::renderer::Renderer::new(display);
 
     let mut world = world::World::new();
     let initialize_points = world.register_system(bezier::initialize_bezier_curve);

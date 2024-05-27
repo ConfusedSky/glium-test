@@ -6,10 +6,13 @@ use bevy_ecs::{
 };
 
 use crate::{
-    point::{self, Point},
     position::Position,
-    primitives,
-    selection::{Connection, Draggable, Hoverable}, System,
+    rendering::{
+        point::{self, Point},
+        primitives,
+    },
+    selection::{Connection, Draggable, Hoverable},
+    System,
 };
 
 fn bezier(

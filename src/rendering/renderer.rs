@@ -1,7 +1,8 @@
 use bevy_ecs::world::World;
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
 
-use crate::{point, position::Position, primitives};
+use super::{point, primitives};
+use crate::position::Position;
 
 pub struct RenderParams<'a> {
     pub display: &'a Display<WindowSurface>,
