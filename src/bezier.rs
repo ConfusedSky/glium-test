@@ -40,7 +40,7 @@ pub fn generate_bezier_points_with_offset(
     let mut shape_points = Vec::with_capacity(subdivisions);
     let offset = offset.unwrap_or_default();
 
-    for i in 0..subdivisions + 1 {
+    for i in 0..subdivisions {
         let t = if offset > 0.0 {
             let t = i as f64 / subdivisions as f64 + offset;
             t.fract()
