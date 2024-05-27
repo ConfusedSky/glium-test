@@ -19,12 +19,13 @@ fn bezier(
     end_point: Position,
     t: f64,
 ) -> Position {
-    let a = Position::lerp(start_point, start_handle, t);
-    let b = Position::lerp(start_handle, end_handle, t);
-    let c = Position::lerp(end_handle, end_point, t);
-    let d = Position::lerp(a, b, t);
-    let e = Position::lerp(b, c, t);
-    Position::lerp(d, e, t)
+    let t_inv = 1.0 - t;
+    let t1 = t_inv.powi(3);
+    let t2 = 3.0 * t_inv.powi(2) * t;
+    let t3 = 3.0 * t_inv * t.powi(2);
+    let t4 = t.powi(3);
+
+    t1 * start_point + t2 * start_handle + t3 * end_handle + t4 * end_point
 }
 
 pub fn generate_bezier_points(control_points: &[Position]) -> Vec<Position> {

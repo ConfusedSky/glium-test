@@ -1,4 +1,5 @@
 use core::ops::{Add, Sub};
+use std::ops::Mul;
 
 use bevy_ecs::component::Component;
 use glium::uniforms::AsUniformValue;
@@ -51,6 +52,42 @@ impl Sub<Position> for Position {
         let y = self.y() - rhs.y();
 
         Self([x, y])
+    }
+}
+
+impl Mul<f64> for Position {
+    type Output = Position;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        let x = self.x() as f64 * rhs;
+        let y = self.y() as f64 * rhs;
+        Position([x as f32, y as f32])
+    }
+}
+
+impl Mul<Position> for f64 {
+    type Output = Position;
+
+    fn mul(self, rhs: Position) -> Self::Output {
+        rhs * self
+    }
+}
+
+impl Mul<f32> for Position {
+    type Output = Position;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        let x = self.x() * rhs;
+        let y = self.y() * rhs;
+        Position([x, y])
+    }
+}
+
+impl Mul<Position> for f32 {
+    type Output = Position;
+
+    fn mul(self, rhs: Position) -> Self::Output {
+        rhs * self
     }
 }
 
