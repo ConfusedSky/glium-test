@@ -14,7 +14,10 @@ use bevy_ecs::{
 };
 
 use crate::{
-    bezier::update_bezier_curve, mouse::{MouseButtons, MousePosition}, position::Position, selection::{grab_selection, mouse_moved, HeldItems}
+    bezier::update_bezier_curve,
+    mouse::{MouseButtons, MousePosition},
+    position::Position,
+    selection::{grab_selection, mouse_moved, HeldItems},
 };
 
 fn main() {

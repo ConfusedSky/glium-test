@@ -27,11 +27,8 @@ fn bezier(
     Position::lerp(d, e, t)
 }
 
-pub fn generate_bezier_points(control_points: &[Position]) -> Vec<primitives::Vertex> {
+pub fn generate_bezier_points(control_points: &[Position]) -> Vec<Position> {
     generate_bezier_points_with_offset(control_points, None, None)
-        .into_iter()
-        .map(primitives::Vertex::from)
-        .collect()
 }
 
 pub fn generate_bezier_points_with_offset(
@@ -96,13 +93,18 @@ impl BezierCurve {
 
     fn update_handles(&self, world: &mut World, points: &[Position]) {
         let mut handles: Mut<primitives::Primatives> = world.get_mut(self.handles).unwrap();
-        let handle_points: Vec<primitives::Vertex> =
-            points.into_iter().map(|x| *x).map(primitives::Vertex::from).collect();
+        let handle_points: Vec<primitives::Vertex> = points
+            .into_iter()
+            .map(|x| primitives::Vertex::from(*x))
+            .collect();
         handles.set_points(&handle_points);
     }
     fn update_curve(&self, world: &mut World, points: &[Position]) {
         let mut curve: Mut<primitives::Primatives> = world.get_mut(self.curve).unwrap();
-        let curve_points = generate_bezier_points(points);
+        let curve_points: Vec<_> = generate_bezier_points(points)
+            .into_iter()
+            .map(primitives::Vertex::from)
+            .collect();
         curve.set_points(&curve_points);
     }
 
