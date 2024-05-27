@@ -173,11 +173,6 @@ impl<'draw> Renderer<'draw> {
     }
 
     #[allow(dead_code)]
-    pub fn draw(&self, render_params: &mut RenderParams, data: &Collection) {
-        self.draw_points(render_params, data.points.iter().cloned());
-    }
-
-    #[allow(dead_code)]
     pub fn draw_single(&self, render_params: &mut RenderParams, data: RenderData) {
         self.draw_points(render_params, [data]);
     }
@@ -201,39 +196,5 @@ impl<'draw> Renderer<'draw> {
         // we don't have to do any copying
         let iter = frame_points.buffer.drain(..);
         self.draw_points(render_params, iter);
-    }
-}
-
-#[derive(Component)]
-pub struct Collection {
-    /// Point objects for each point to render
-    points: Vec<RenderData>,
-    /// Size for each point
-    point_size: f32,
-}
-
-impl Collection {
-    const DEFAULT_SIZE: f32 = 15.0;
-
-    pub fn new(points: &[Position], size: Option<f32>) -> Self {
-        let mut result = Self {
-            point_size: size.unwrap_or(Self::DEFAULT_SIZE),
-            points: vec![],
-        };
-        result.set_points(points);
-
-        result
-    }
-
-    pub fn set_points(&mut self, points: &[Position]) {
-        // Points are reset so the held point no longer makes any sense
-        self.points = points
-            .iter()
-            .map(|x| RenderData {
-                size: self.point_size,
-                position: *x,
-                hovered: false,
-            })
-            .collect();
     }
 }

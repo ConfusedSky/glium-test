@@ -37,8 +37,6 @@ fn main() {
     println!("{window_size:?}");
     let mut window_size = Position::from([window_size.width as f32, window_size.height as f32]);
 
-    let follow_points = point::Collection::new(&[], Some(10.0));
-
     let timer = SystemTime::now();
     let mut renderer = renderer::Renderer::new(display);
 
@@ -52,7 +50,6 @@ fn main() {
     world.init_resource::<HeldItems>();
     world.init_resource::<System>();
     world.init_resource::<FrameData>();
-    world.spawn(follow_points);
 
     let mut schedule: Schedule = Default::default();
     schedule.add_systems((mouse_moved, grab_selection));

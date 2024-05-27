@@ -41,11 +41,6 @@ impl Renderer<'_> {
             self.primitives_renderer.draw(&mut render_params, &mut data);
         }
 
-        let mut query = world.query::<&mut point::Collection>();
-        for mut data in query.iter_mut(world) {
-            self.points_renderer.draw(&mut render_params, &mut data);
-        }
-
         self.points_renderer
             .draw_from_world(&mut render_params, world);
 
