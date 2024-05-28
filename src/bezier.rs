@@ -125,8 +125,6 @@ pub fn update_bezier_curve(
     bezier_curve: Res<BezierCurve>,
     system: Res<System>,
 ) {
-    let bezier_curve = bezier_curve.clone();
-
     // Look at each point if any of them have a position that has changed
     let curve_points: Vec<_> = positions_query
         .iter_many([
@@ -146,6 +144,11 @@ pub fn update_bezier_curve(
             has_change = true;
         }
 
+        // Clone here because many below processes can only take
+        // pure position objects
+        // TODO: Figure out a way to use either refs _or_ objects
+        // below. May be able to make improvements in a lot of places
+        // since right now we are doing a lot of unnecesary cloning/copying
         control_points.push(point.as_ref().clone());
     }
     // We always want to update the curve follower
