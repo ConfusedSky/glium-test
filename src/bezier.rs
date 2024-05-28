@@ -36,7 +36,7 @@ fn bezier(
     t1 * start_point + t2 * start_handle + t3 * end_handle + t4 * end_point
 }
 
-pub fn generate_bezier_points(control_points: &[Position; 4]) -> Vec<Position> {
+pub fn generate_bezier_points(control_points: &[Position; 4]) -> impl Iterator<Item=Position> {
     generate_bezier_points_with_offset(control_points, None, None)
 }
 
@@ -44,7 +44,7 @@ pub fn generate_bezier_points_with_offset(
     control_points: &[Position; 4],
     subdivisions: Option<usize>,
     offset: Option<f64>,
-) -> Vec<Position> {
+) -> impl Iterator<Item=Position> {
     let subdivisions = subdivisions.unwrap_or(60);
     let mut shape_points = Vec::with_capacity(subdivisions);
     let offset = offset.unwrap_or_default();
@@ -67,7 +67,7 @@ pub fn generate_bezier_points_with_offset(
         shape_points.push(point);
     }
 
-    shape_points
+    shape_points.into_iter()
 }
 
 #[derive(Resource, Clone)]
@@ -154,8 +154,8 @@ pub fn update_bezier_curve(
     }
     // We always want to update the curve follower
     let elapsed = system.elapsed / 4.0;
-    let p = generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
-    for point in p {
+    let point_iterator = generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
+    for point in point_iterator {
         let draw_command = point::DrawPoint {
             position: point,
             size: 10.0,
@@ -173,6 +173,6 @@ pub fn update_bezier_curve(
 
     handles.set_positions(control_points.0.clone());
 
-    let curve_points: Vec<_> = generate_bezier_points(&control_points.0);
+    let curve_points = generate_bezier_points(&control_points.0);
     curve.set_positions(curve_points);
 }
