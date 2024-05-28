@@ -12,7 +12,7 @@ winit = "0.29.15"
 [dependencies.bevy]
 version="0.13.2"
 default-features=false
-features=["multi-threaded"]
+features=["multi-threaded", "bevy_winit"]
 
 [profile.dev.package."*"]
 opt-level = 3
