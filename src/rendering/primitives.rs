@@ -170,7 +170,8 @@ impl Primatives {
     }
 
     pub fn set_positions(&mut self, positions: &[Position]) {
-        self.primitive_data = positions.into_iter().map(|&x| Vertex::from(x)).collect();
+        self.primitive_data.clear();
+        self.primitive_data.extend(positions.into_iter().map(|&x| Vertex::from(x)));
         self.buffer_needs_refresh = true;
     }
 }

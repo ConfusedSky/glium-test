@@ -123,7 +123,7 @@ pub fn grab_selection(
 
     if mouse_buttons.left_mouse_pressed() {
         // Put all items that are being hovered into the selection
-        held.items = hover_query.iter().collect();
+        held.items.extend(hover_query.iter());
     } else if mouse_buttons.left_mouse_released() {
         // Clear all selection if the mouse is let go
         held.items.clear();
