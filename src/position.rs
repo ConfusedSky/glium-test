@@ -40,7 +40,7 @@ impl Add<Position> for Position {
         let x = self.x() + rhs.x();
         let y = self.y() + rhs.y();
 
-        Self([x, y])
+        Position([x, y])
     }
 }
 
@@ -51,7 +51,7 @@ impl Sub<Position> for Position {
         let x = self.x() - rhs.x();
         let y = self.y() - rhs.y();
 
-        Self([x, y])
+        Position([x, y])
     }
 }
 

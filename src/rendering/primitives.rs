@@ -169,9 +169,10 @@ impl Primatives {
         }
     }
 
-    pub fn set_positions(&mut self, positions: &[Position]) {
+    pub fn set_positions<'a, Iter: IntoIterator<Item = Position>>(&mut self, positions: Iter) {
         self.primitive_data.clear();
-        self.primitive_data.extend(positions.into_iter().map(|&x| Vertex::from(x)));
+        self.primitive_data
+            .extend(positions.into_iter().map(|x| Vertex::from(x)));
         self.buffer_needs_refresh = true;
     }
 }

@@ -171,8 +171,8 @@ pub fn update_bezier_curve(
     let [mut handles, mut curve] =
         primitives_query.many_mut([bezier_curve.handles, bezier_curve.curve]);
 
-    handles.set_positions(&control_points.0);
+    handles.set_positions(control_points.0.clone());
 
     let curve_points: Vec<_> = generate_bezier_points(&control_points.0);
-    curve.set_positions(&curve_points);
+    curve.set_positions(curve_points);
 }
