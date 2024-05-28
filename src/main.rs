@@ -6,10 +6,12 @@ mod selection;
 
 use std::time::SystemTime;
 
-use bevy::ecs::{
-    schedule::{IntoSystemConfigs, Schedule},
-    system::Resource,
-    world,
+use bevy::{
+    ecs::{
+        schedule::{IntoSystemConfigs, Schedule},
+        system::Resource,
+        world,
+    }, prelude::PluginGroup, window::{Window, WindowPlugin}, DefaultPlugins
 };
 
 use crate::{
@@ -29,6 +31,19 @@ struct System {
 }
 
 fn main() {
+    let mut app = bevy::prelude::App::new();
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            resolution: (800., 480.).into(),
+            resizable: true,
+            present_mode: bevy::window::PresentMode::AutoNoVsync,
+            ..Default::default()
+        }),
+        ..Default::default()
+    }));
+
+    app.run();
+
     let event_loop = winit::event_loop::EventLoopBuilder::new()
         .build()
         .expect("event loop building");
