@@ -1,7 +1,7 @@
 use bevy_ecs::{
     change_detection::DetectChanges,
     entity::Entity,
-    system::{Commands, EntityCommands, Query, Res, Resource},
+    system::{Commands, EntityCommands, Local, Query, Res, Resource},
     world::Ref,
 };
 
@@ -118,28 +118,29 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
     commands.insert_resource(resource);
 }
 
+#[derive(Default)]
+pub struct ControlPoints([Position; 4]);
+
 pub fn update_bezier_curve(
     mut commands: Commands,
     positions_query: Query<Ref<Position>>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     bezier_curve: Res<BezierCurve>,
     system: Res<System>,
+    mut control_points: Local<ControlPoints>
 ) {
     // Look at each point if any of them have a position that has changed
-    let curve_points: Vec<_> = positions_query
+    let control_points_query = positions_query
         .iter_many([
             bezier_curve.start_point,
             bezier_curve.start_handle,
             bezier_curve.end_handle,
             bezier_curve.end_point,
-        ])
-        .collect();
+        ]);
 
     let mut has_change = false;
 
-    let mut control_points: Vec<_> = Vec::with_capacity(4);
-
-    for point in curve_points {
+    for (i, point) in control_points_query.enumerate() {
         if point.is_changed() {
             has_change = true;
         }
@@ -149,11 +150,11 @@ pub fn update_bezier_curve(
         // TODO: Figure out a way to use either refs _or_ objects
         // below. May be able to make improvements in a lot of places
         // since right now we are doing a lot of unnecesary cloning/copying
-        control_points.push(point.as_ref().clone());
+        control_points.0[i] = point.as_ref().clone();
     }
     // We always want to update the curve follower
     let elapsed = system.elapsed / 4.0;
-    let p = generate_bezier_points_with_offset(&control_points, Some(10), Some(elapsed));
+    let p = generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
     for point in p {
         let draw_command = point::DrawPoint {
             position: point,
@@ -170,8 +171,8 @@ pub fn update_bezier_curve(
     let [mut handles, mut curve] =
         primitives_query.many_mut([bezier_curve.handles, bezier_curve.curve]);
 
-    handles.set_positions(&control_points);
+    handles.set_positions(&control_points.0);
 
-    let curve_points: Vec<_> = generate_bezier_points(&control_points);
+    let curve_points: Vec<_> = generate_bezier_points(&control_points.0);
     curve.set_positions(&curve_points);
 }
