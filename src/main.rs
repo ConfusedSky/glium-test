@@ -13,7 +13,14 @@ use bevy::ecs::{
 };
 
 use crate::{
-    bezier::update_bezier_curve, mouse::{MouseButtons, MousePosition}, position::Position, rendering::point::PointsData, selection::{grab_selection, mouse_moved, HeldItems}
+    bezier::update_bezier_curve,
+    mouse::{MouseButtons, MousePosition},
+    position::Position,
+    rendering::{
+        point::PointsData,
+        renderer::{render_system, WindowSize},
+    },
+    selection::{grab_selection, mouse_moved, HeldItems},
 };
 
 #[derive(Resource, Default)]
@@ -29,10 +36,10 @@ fn main() {
     let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
     let window_size = window.inner_size();
     println!("{window_size:?}");
-    let mut window_size = Position::from([window_size.width as f32, window_size.height as f32]);
+    let window_size = Position::from([window_size.width as f32, window_size.height as f32]);
 
     let timer = SystemTime::now();
-    let mut renderer = rendering::renderer::Renderer::new(display);
+    let renderer = rendering::renderer::Renderer::new(display);
 
     let mut world = world::World::new();
     let initialize_points = world.register_system(bezier::initialize_bezier_curve);
@@ -44,10 +51,15 @@ fn main() {
     world.init_resource::<HeldItems>();
     world.init_resource::<System>();
     world.init_resource::<PointsData>();
+    world.insert_resource(WindowSize(window_size));
+    world.insert_non_send_resource(renderer);
 
     let mut schedule: Schedule = Default::default();
     schedule.add_systems((mouse_moved, grab_selection));
     schedule.add_systems(update_bezier_curve.after(mouse_moved));
+
+    let mut render_schedule: Schedule = Default::default();
+    render_schedule.add_systems(render_system);
 
     let _ = event_loop.run(move |event, window_target| {
         match event {
@@ -57,7 +69,8 @@ fn main() {
                     // TODO: Make the it render the original 800x480 in centered
                     // TODO: Zoom in the camera appropriately so the original 800x480 fits the screen as closely
                     //       as possible
-                    window_size = Position::from([new_size.width as f32, new_size.height as f32]);
+                    world.resource_mut::<WindowSize>().0 =
+                        Position::from([new_size.width as f32, new_size.height as f32])
                 }
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let position = [position.x as f32, position.y as f32].into();
@@ -76,15 +89,14 @@ fn main() {
         world.resource_mut::<System>().elapsed = timer.elapsed().unwrap().as_secs_f64();
 
         schedule.run(&mut world);
+        render_schedule.run(&mut world);
 
-        renderer.draw(&mut world, &window_size);
+        world.clear_trackers();
 
         let mut mouse_buttons = world.resource_mut::<MouseButtons>();
         if mouse_buttons.needs_end_frame() {
             // We want to make sure we don't trigger change detection every frame
             mouse_buttons.end_frame();
         }
-
-        world.clear_trackers();
     });
 }

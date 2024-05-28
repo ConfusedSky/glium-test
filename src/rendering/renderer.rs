@@ -1,4 +1,4 @@
-use bevy::ecs::world::World;
+use bevy::ecs::{system::Resource, world::World};
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
 
 use super::{point, primitives};
@@ -15,6 +15,9 @@ pub struct Renderer<'a> {
     primitives_renderer: primitives::Renderer,
     points_renderer: point::Renderer<'a>,
 }
+
+#[derive(Resource)]
+pub struct WindowSize(pub Position);
 
 impl Renderer<'_> {
     pub fn new(display: Display<WindowSurface>) -> Self {
@@ -47,4 +50,11 @@ impl Renderer<'_> {
 
         target.finish().unwrap();
     }
+}
+
+pub fn render_system(world: &mut World) {
+    let window_size = world.resource::<WindowSize>().0.clone();
+    let mut renderer = world.remove_non_send_resource::<Renderer>().unwrap();
+    renderer.draw(world, &window_size);
+    world.insert_non_send_resource(renderer);
 }
