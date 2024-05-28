@@ -8,7 +8,7 @@ use bevy::ecs::{
 use crate::{
     position::Position,
     rendering::{
-        point::{self, Point},
+        point::{Point, Points},
         primitives,
     },
     selection::{Connection, Draggable, Hoverable},
@@ -122,7 +122,7 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
 pub struct ControlPoints([Position; 4]);
 
 pub fn update_bezier_curve(
-    mut commands: Commands,
+    mut points: Points,
     positions_query: Query<Ref<Position>>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     bezier_curve: Res<BezierCurve>,
@@ -156,11 +156,7 @@ pub fn update_bezier_curve(
     let elapsed = system.elapsed / 4.0;
     let point_iterator = generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
     for point in point_iterator {
-        let draw_command = point::DrawPoint {
-            position: point,
-            size: 10.0,
-        };
-        commands.add(draw_command);
+        points.draw_point(point, 10.0);
     }
 
     // If any of the curve points have been changed we need to update the curve parts

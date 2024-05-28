@@ -13,11 +13,7 @@ use bevy::ecs::{
 };
 
 use crate::{
-    bezier::update_bezier_curve,
-    mouse::{MouseButtons, MousePosition},
-    position::Position,
-    rendering::point::FrameData,
-    selection::{grab_selection, mouse_moved, HeldItems},
+    bezier::update_bezier_curve, mouse::{MouseButtons, MousePosition}, position::Position, rendering::point::PointsData, selection::{grab_selection, mouse_moved, HeldItems}
 };
 
 #[derive(Resource, Default)]
@@ -47,7 +43,7 @@ fn main() {
     world.init_resource::<MouseButtons>();
     world.init_resource::<HeldItems>();
     world.init_resource::<System>();
-    world.init_resource::<FrameData>();
+    world.init_resource::<PointsData>();
 
     let mut schedule: Schedule = Default::default();
     schedule.add_systems((mouse_moved, grab_selection));

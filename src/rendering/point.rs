@@ -2,7 +2,7 @@ use super::renderer::RenderParams;
 use crate::{position::Position, selection};
 use bevy::ecs::{
     component::Component,
-    system::{Command, Resource},
+    system::{ResMut, Resource, SystemParam},
     world::{Mut, World},
 };
 use glium::{
@@ -31,23 +31,25 @@ pub struct Point {
 }
 
 #[derive(Resource, Default)]
-pub struct FrameData {
+pub struct PointsData {
     buffer: Vec<RenderData>,
 }
 
-pub struct DrawPoint {
-    pub position: Position,
-    pub size: f32,
+#[derive(SystemParam)]
+/// Note this probably limits parallelizability by having a
+/// Mutable reference here especially if multiple systems
+/// need to draw points
+pub struct Points<'w> {
+    data: ResMut<'w, PointsData>,
 }
 
-impl Command for DrawPoint {
-    fn apply(self, world: &mut World) {
-        let mut frame_data = world.resource_mut::<FrameData>();
-        frame_data.buffer.push(RenderData {
-            position: self.position,
-            size: self.size,
+impl Points<'_> {
+    pub fn draw_point(&mut self, position: Position, size: f32) {
+        self.data.buffer.push(RenderData {
+            position,
+            size,
             hovered: false,
-        })
+        });
     }
 }
 
@@ -191,7 +193,7 @@ impl<'draw> Renderer<'draw> {
         self.draw_points(render_params, iter);
 
         // Draw single frame points
-        let mut frame_points: Mut<FrameData> = world.resource_mut();
+        let mut frame_points: Mut<PointsData> = world.resource_mut();
 
         // We use drain here so we can remove all elements from the buffer _and_
         // we don't have to do any copying
