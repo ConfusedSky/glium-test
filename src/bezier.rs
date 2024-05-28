@@ -36,12 +36,12 @@ fn bezier(
     t1 * start_point + t2 * start_handle + t3 * end_handle + t4 * end_point
 }
 
-pub fn generate_bezier_points(control_points: &[Position]) -> Vec<Position> {
+pub fn generate_bezier_points(control_points: &[Position; 4]) -> Vec<Position> {
     generate_bezier_points_with_offset(control_points, None, None)
 }
 
 pub fn generate_bezier_points_with_offset(
-    control_points: &[Position],
+    control_points: &[Position; 4],
     subdivisions: Option<usize>,
     offset: Option<f64>,
 ) -> Vec<Position> {
