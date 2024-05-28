@@ -1,4 +1,4 @@
-use bevy_ecs::{
+use bevy::ecs::{
     change_detection::DetectChanges,
     component::Component,
     entity::Entity,

@@ -1,4 +1,4 @@
-use bevy_ecs::{
+use bevy::ecs::{
     change_detection::DetectChanges,
     entity::Entity,
     system::{Commands, EntityCommands, Local, Query, Res, Resource},

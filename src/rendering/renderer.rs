@@ -1,4 +1,4 @@
-use bevy_ecs::world::World;
+use bevy::ecs::world::World;
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
 
 use super::{point, primitives};

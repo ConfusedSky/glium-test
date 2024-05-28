@@ -1,4 +1,4 @@
-use bevy_ecs::system::Resource;
+use bevy::ecs::system::Resource;
 use winit::event::{ElementState, MouseButton};
 
 use crate::position::Position;

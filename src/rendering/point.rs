@@ -1,6 +1,6 @@
 use super::renderer::RenderParams;
 use crate::{position::Position, selection};
-use bevy_ecs::{
+use bevy::ecs::{
     component::Component,
     system::{Command, Resource},
     world::{Mut, World},

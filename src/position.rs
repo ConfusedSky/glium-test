@@ -1,7 +1,7 @@
 use core::ops::{Add, Sub};
 use std::ops::Mul;
 
-use bevy_ecs::component::Component;
+use bevy::ecs::component::Component;
 use glium::uniforms::AsUniformValue;
 
 #[derive(Clone, Copy, Component, Default)]

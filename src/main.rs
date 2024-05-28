@@ -6,7 +6,7 @@ mod selection;
 
 use std::time::SystemTime;
 
-use bevy_ecs::{
+use bevy::ecs::{
     schedule::{IntoSystemConfigs, Schedule},
     system::Resource,
     world,
