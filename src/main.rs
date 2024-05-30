@@ -4,15 +4,22 @@ mod position;
 mod rendering;
 mod selection;
 
-use std::time::SystemTime;
+use std::{num::NonZeroU32, time::SystemTime};
 
 use bevy::{
     ecs::{
         schedule::{IntoSystemConfigs, Schedule},
         system::Resource,
         world,
-    }, prelude::PluginGroup, window::{Window, WindowPlugin}, DefaultPlugins
+    },
+    prelude::PluginGroup,
+    window::{RequestRedraw, Window, WindowPlugin},
+    winit::WinitWindows,
+    DefaultPlugins,
 };
+use glutin::display::GetGlDisplay;
+use raw_window_handle::HasRawWindowHandle;
+use winit::raw_window_handle::HasWindowHandle;
 
 use crate::{
     bezier::update_bezier_curve,
@@ -41,7 +48,34 @@ fn main() {
         }),
         ..Default::default()
     }));
+    app.update();
 
+    {
+        let event_loop = app
+            .world
+            .non_send_resource::<winit::event_loop::EventLoop<RequestRedraw>>();
+
+        // First we start by opening a new Window
+        let display_builder = glutin_winit::DisplayBuilder::new();
+        let config_template_builder = glutin::config::ConfigTemplateBuilder::new();
+        let (_, gl_config) = display_builder
+            .build(&event_loop, config_template_builder, |mut configs| {
+                // Just use the first configuration since we don't have any special preferences here
+                configs.next().unwrap()
+            })
+            .unwrap();
+
+        let winit_data = app.world.non_send_resource::<WinitWindows>();
+        assert_eq!(winit_data.windows.len(), 1);
+
+        let window = winit_data.windows.values().next().unwrap();
+        let (width, height): (u32, u32) = window.inner_size().into();
+    
+        let display = gl_config.display();
+
+        let raw_window_handle = window
+            .window_handle().map(|handle| handle.as_raw()).ok();
+    }
     app.run();
 
     let event_loop = winit::event_loop::EventLoopBuilder::new()

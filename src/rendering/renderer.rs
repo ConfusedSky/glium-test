@@ -52,6 +52,10 @@ impl Renderer<'_> {
     }
 }
 
+pub fn initialize_renderer(world: &mut World) {
+
+}
+
 pub fn render_system(world: &mut World) {
     let window_size = world.resource::<WindowSize>().0.clone();
     let mut renderer = world.remove_non_send_resource::<Renderer>().unwrap();

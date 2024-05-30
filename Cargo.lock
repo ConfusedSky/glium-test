@@ -1385,6 +1385,8 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "glium",
+ "glutin",
+ "glutin-winit",
  "winit",
 ]
 
