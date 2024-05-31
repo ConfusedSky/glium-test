@@ -4,179 +4,82 @@ mod position;
 mod rendering;
 mod selection;
 
-use std::{num::NonZeroU32, time::SystemTime};
+use std::time::SystemTime;
 
 use bevy::{
+    app::{First, Startup, Update},
     ecs::{
-        schedule::{IntoSystemConfigs, Schedule},
-        system::Resource,
-        world,
+        schedule::IntoSystemConfigs,
+        system::{ResMut, Resource},
+        world::World,
     },
     prelude::PluginGroup,
-    window::{RequestRedraw, Window, WindowPlugin},
-    winit::WinitWindows,
+    window::{Window, WindowPlugin},
+    winit::{WinitPlugin, WinitWindows},
     DefaultPlugins,
 };
-use glium::{Display, Surface};
-use glutin::{context::NotCurrentGlContext, display::{GetGlDisplay, GlDisplay}};
-use raw_window_handle::HasRawWindowHandle;
+use rendering::renderer::RenderingPlugin;
 
 use crate::{
     bezier::update_bezier_curve,
     mouse::{MouseButtons, MousePosition},
     position::Position,
-    rendering::{
-        point::PointsData,
-        renderer::{render_system, WindowSize},
-    },
+    rendering::renderer::WindowSize,
     selection::{grab_selection, mouse_moved, HeldItems},
 };
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 struct System {
     elapsed: f64,
+    timer: SystemTime,
+}
+
+impl Default for System {
+    fn default() -> Self {
+        Self {
+            elapsed: 0.0,
+            timer: SystemTime::now(),
+        }
+    }
 }
 
 fn main() {
     let mut app = bevy::prelude::App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            resolution: (800., 480.).into(),
-            resizable: true,
-            present_mode: bevy::window::PresentMode::AutoNoVsync,
-            ..Default::default()
-        }),
-        ..Default::default()
-    }));
-    app.update();
-
-    {
-        let event_loop = app
-            .world
-            .non_send_resource::<winit::event_loop::EventLoop<RequestRedraw>>();
-
-        // First we start by opening a new Window
-        let display_builder = glutin_winit::DisplayBuilder::new();
-        let config_template_builder = glutin::config::ConfigTemplateBuilder::new();
-        let (_, gl_config) = display_builder
-            .build(&event_loop, config_template_builder, |mut configs| {
-                // Just use the first configuration since we don't have any special preferences here
-                configs.next().unwrap()
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: (800., 480.).into(),
+                    resizable: true,
+                    present_mode: bevy::window::PresentMode::AutoNoVsync,
+                    ..Default::default()
+                }),
+                ..Default::default() // Make sure we have access to the winit windows before initializing the rendering windows
             })
-            .unwrap();
+            .add_after::<WinitPlugin, _>(RenderingPlugin),
+    );
 
-        let winit_data = app.world.non_send_resource::<WinitWindows>();
+    app.add_systems(Startup, |world: &mut World| {
+        let winit_data = world.non_send_resource::<WinitWindows>();
         assert_eq!(winit_data.windows.len(), 1);
 
         let window = winit_data.windows.values().next().unwrap();
-        let (width, height): (u32, u32) = window.inner_size().into();
-
-        let display = gl_config.display();
-
-        let raw_window_handle = window.raw_window_handle();
-
-        let attrs =
-            glutin::surface::SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new()
-                .build(
-                    window.raw_window_handle(),
-                    NonZeroU32::new(width).unwrap(),
-                    NonZeroU32::new(height).unwrap(),
-                );
-
-        let surface = unsafe {
-            gl_config
-                .display()
-                .create_window_surface(&gl_config, &attrs)
-                .unwrap()
-        };
-
-        let context_attributes = glutin::context::ContextAttributesBuilder::new()
-            .build(Some(window.raw_window_handle()));
-        let current_context = Some(unsafe {
-            gl_config
-                .display()
-                .create_context(&gl_config, &context_attributes)
-                .expect("failed to create context")
-        })
-        .unwrap()
-        .make_current(&surface)
-        .unwrap();
-        let display = Display::from_context_surface(current_context, surface).unwrap();
-        
-        let mut target = display.draw();
-        target.clear_color(1.0, 0.0, 0.0, 1.0);
-        target.finish().unwrap();
-    }
-    app.run();
-
-    let event_loop = winit::event_loop::EventLoopBuilder::new()
-        .build()
-        .expect("event loop building");
-    event_loop.set_control_flow(winit::event_loop::ControlFlow::Poll);
-    let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new().build(&event_loop);
-    let window_size = window.inner_size();
-    println!("{window_size:?}");
-    let window_size = Position::from([window_size.width as f32, window_size.height as f32]);
-
-    let timer = SystemTime::now();
-    let renderer = rendering::renderer::Renderer::new(display);
-
-    let mut world = world::World::new();
-    let initialize_points = world.register_system(bezier::initialize_bezier_curve);
-    world
-        .run_system(initialize_points)
-        .expect("Control points weren't successfully initialized");
-    world.init_resource::<MousePosition>();
-    world.init_resource::<MouseButtons>();
-    world.init_resource::<HeldItems>();
-    world.init_resource::<System>();
-    world.init_resource::<PointsData>();
-    world.insert_resource(WindowSize(window_size));
-    world.insert_non_send_resource(renderer);
-
-    let mut schedule: Schedule = Default::default();
-    schedule.add_systems((mouse_moved, grab_selection));
-    schedule.add_systems(update_bezier_curve.after(mouse_moved));
-
-    let mut render_schedule: Schedule = Default::default();
-    render_schedule.add_systems(render_system);
-
-    let _ = event_loop.run(move |event, window_target| {
-        match event {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::CloseRequested => window_target.exit(),
-                winit::event::WindowEvent::Resized(new_size) => {
-                    // TODO: Make the it render the original 800x480 in centered
-                    // TODO: Zoom in the camera appropriately so the original 800x480 fits the screen as closely
-                    //       as possible
-                    world.resource_mut::<WindowSize>().0 =
-                        Position::from([new_size.width as f32, new_size.height as f32])
-                }
-                winit::event::WindowEvent::CursorMoved { position, .. } => {
-                    let position = [position.x as f32, position.y as f32].into();
-                    let mut mouse_position = world.resource_mut::<MousePosition>();
-                    mouse_position.update(position);
-                }
-                winit::event::WindowEvent::MouseInput { state, button, .. } => {
-                    let mut mouse_buttons = world.resource_mut::<MouseButtons>();
-                    mouse_buttons.update(state, button);
-                }
-                _ => (),
-            },
-            _ => (),
-        };
-
-        world.resource_mut::<System>().elapsed = timer.elapsed().unwrap().as_secs_f64();
-
-        schedule.run(&mut world);
-        render_schedule.run(&mut world);
-
-        world.clear_trackers();
-
-        let mut mouse_buttons = world.resource_mut::<MouseButtons>();
-        if mouse_buttons.needs_end_frame() {
-            // We want to make sure we don't trigger change detection every frame
-            mouse_buttons.end_frame();
-        }
+        let (width, height): (f32, f32) = window.inner_size().into();
+        let window_size = Position::from([width, height]);
+        world.insert_resource(WindowSize(window_size));
     });
+    app.add_systems(Startup, bezier::initialize_bezier_curve);
+    app.init_resource::<MousePosition>();
+    app.init_resource::<MouseButtons>();
+    app.init_resource::<HeldItems>();
+    app.init_resource::<System>();
+
+    app.add_systems(Update, (mouse_moved, grab_selection));
+    app.add_systems(Update, update_bezier_curve.after(mouse_moved));
+
+    app.add_systems(First, |mut system: ResMut<System>| {
+        system.elapsed = system.timer.elapsed().map(|s| s.as_secs_f64()).unwrap();
+    });
+
+    app.run();
 }

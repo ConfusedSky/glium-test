@@ -20,6 +20,7 @@ impl MousePosition {
         self.previous_position
     }
 
+    #[allow(dead_code)]
     pub fn update(&mut self, new_position: Position) {
         self.previous_position = self.position;
         self.position = new_position;
@@ -34,6 +35,7 @@ pub struct MouseButtons {
 }
 
 impl MouseButtons {
+    #[allow(dead_code)]
     pub fn update(&mut self, state: ElementState, button: MouseButton) {
         if button == MouseButton::Left {
             if state.is_pressed() {
@@ -46,10 +48,12 @@ impl MouseButtons {
         }
     }
 
+    #[allow(dead_code)]
     pub fn needs_end_frame(&self) -> bool {
         self.left_mouse_pressed || self.left_mouse_released
     }
 
+    #[allow(dead_code)]
     pub fn end_frame(&mut self) {
         self.left_mouse_pressed = false;
         self.left_mouse_released = false;
