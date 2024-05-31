@@ -17,9 +17,9 @@ use bevy::{
     winit::WinitWindows,
     DefaultPlugins,
 };
-use glutin::display::GetGlDisplay;
+use glium::{Display, Surface};
+use glutin::{context::NotCurrentGlContext, display::{GetGlDisplay, GlDisplay}};
 use raw_window_handle::HasRawWindowHandle;
-use winit::raw_window_handle::HasWindowHandle;
 
 use crate::{
     bezier::update_bezier_curve,
@@ -70,11 +70,42 @@ fn main() {
 
         let window = winit_data.windows.values().next().unwrap();
         let (width, height): (u32, u32) = window.inner_size().into();
-    
+
         let display = gl_config.display();
 
-        let raw_window_handle = window
-            .window_handle().map(|handle| handle.as_raw()).ok();
+        let raw_window_handle = window.raw_window_handle();
+
+        let attrs =
+            glutin::surface::SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new()
+                .build(
+                    window.raw_window_handle(),
+                    NonZeroU32::new(width).unwrap(),
+                    NonZeroU32::new(height).unwrap(),
+                );
+
+        let surface = unsafe {
+            gl_config
+                .display()
+                .create_window_surface(&gl_config, &attrs)
+                .unwrap()
+        };
+
+        let context_attributes = glutin::context::ContextAttributesBuilder::new()
+            .build(Some(window.raw_window_handle()));
+        let current_context = Some(unsafe {
+            gl_config
+                .display()
+                .create_context(&gl_config, &context_attributes)
+                .expect("failed to create context")
+        })
+        .unwrap()
+        .make_current(&surface)
+        .unwrap();
+        let display = Display::from_context_surface(current_context, surface).unwrap();
+        
+        let mut target = display.draw();
+        target.clear_color(1.0, 0.0, 0.0, 1.0);
+        target.finish().unwrap();
     }
     app.run();
 

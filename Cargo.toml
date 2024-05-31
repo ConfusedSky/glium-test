@@ -9,7 +9,8 @@ edition = "2021"
 glium = "0.34.0"
 glutin = "0.31.3"
 glutin-winit = "0.4.2"
-winit = "0.29.15"
+raw-window-handle = "0.5.2"
+winit = { version="0.29.15", default-features=false, features=["rwh_05"] }
 
 [dependencies.bevy]
 version="0.13.2"
