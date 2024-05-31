@@ -1,8 +1,11 @@
-use bevy::ecs::{
-    change_detection::DetectChanges,
-    entity::Entity,
-    system::{Commands, EntityCommands, Local, Query, Res, Resource},
-    world::Ref,
+use bevy::{
+    app::{Plugin, PostUpdate, Startup},
+    ecs::{
+        change_detection::DetectChanges,
+        entity::Entity,
+        system::{Commands, EntityCommands, Local, Query, Res, Resource},
+        world::Ref,
+    },
 };
 
 use crate::{
@@ -35,15 +38,15 @@ fn bezier(
     t1 * start_point + t2 * start_handle + t3 * end_handle + t4 * end_point
 }
 
-pub fn generate_bezier_points(control_points: &[Position; 4]) -> impl Iterator<Item=Position> {
+fn generate_bezier_points(control_points: &[Position; 4]) -> impl Iterator<Item = Position> {
     generate_bezier_points_with_offset(control_points, None, None)
 }
 
-pub fn generate_bezier_points_with_offset(
+fn generate_bezier_points_with_offset(
     control_points: &[Position; 4],
     subdivisions: Option<usize>,
     offset: Option<f64>,
-) -> impl Iterator<Item=Position> {
+) -> impl Iterator<Item = Position> {
     let subdivisions = subdivisions.unwrap_or(60);
     let mut shape_points = Vec::with_capacity(subdivisions);
     let offset = offset.unwrap_or_default();
@@ -70,7 +73,7 @@ pub fn generate_bezier_points_with_offset(
 }
 
 #[derive(Resource, Clone)]
-pub struct BezierCurve {
+struct BezierCurve {
     pub start_point: Entity,
     pub start_handle: Entity,
     pub end_handle: Entity,
@@ -89,7 +92,7 @@ fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> Entit
     ))
 }
 
-pub fn initialize_bezier_curve(mut commands: Commands) {
+fn initialize_bezier_curve(mut commands: Commands) {
     let start_handle = create_control_point(&mut commands, 400.0, 456.0).id();
     let end_handle = create_control_point(&mut commands, 400.0, 24.0).id();
 
@@ -118,24 +121,23 @@ pub fn initialize_bezier_curve(mut commands: Commands) {
 }
 
 #[derive(Default)]
-pub struct ControlPoints([Position; 4]);
+struct ControlPoints([Position; 4]);
 
-pub fn update_bezier_curve(
+fn update_bezier_curve(
     mut points: Points,
     positions_query: Query<Ref<Position>>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     bezier_curve: Res<BezierCurve>,
     system: Res<crate::my_time::Time>,
-    mut control_points: Local<ControlPoints>
+    mut control_points: Local<ControlPoints>,
 ) {
     // Look at each point if any of them have a position that has changed
-    let control_points_query = positions_query
-        .iter_many([
-            bezier_curve.start_point,
-            bezier_curve.start_handle,
-            bezier_curve.end_handle,
-            bezier_curve.end_point,
-        ]);
+    let control_points_query = positions_query.iter_many([
+        bezier_curve.start_point,
+        bezier_curve.start_handle,
+        bezier_curve.end_handle,
+        bezier_curve.end_point,
+    ]);
 
     let mut has_change = false;
 
@@ -153,7 +155,8 @@ pub fn update_bezier_curve(
     }
     // We always want to update the curve follower
     let elapsed = system.elapsed / 4.0;
-    let point_iterator = generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
+    let point_iterator =
+        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
     for point in point_iterator {
         points.draw_point(point, 10.0);
     }
@@ -170,4 +173,13 @@ pub fn update_bezier_curve(
 
     let curve_points = generate_bezier_points(&control_points.0);
     curve.set_positions(curve_points);
+}
+
+pub struct BezierPlugin;
+
+impl Plugin for BezierPlugin {
+    fn build(&self, app: &mut bevy::prelude::App) {
+        app.add_systems(Startup, initialize_bezier_curve);
+        app.add_systems(PostUpdate, update_bezier_curve);
+    }
 }

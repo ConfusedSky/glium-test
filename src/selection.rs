@@ -1,20 +1,18 @@
 use bevy::{
-    ecs::{
+    app::{Plugin, Update}, ecs::{
         component::Component,
         entity::Entity,
         event::EventReader,
         query::With,
         system::{Commands, Local, ParamSet, Query, Res, ResMut, Resource},
-    },
-    input::{mouse::MouseButton, ButtonInput},
-    window::CursorMoved,
+    }, input::{mouse::MouseButton, ButtonInput}, window::CursorMoved
 };
 
 use crate::position::Position;
 
 #[derive(Resource, Default)]
-pub struct HeldItems {
-    pub items: Vec<Entity>,
+struct HeldItems {
+    items: Vec<Entity>,
 }
 
 /// If this component is added to an entity
@@ -47,7 +45,7 @@ pub struct Draggable;
 #[derive(Component)]
 pub struct Connection(pub Entity);
 
-pub fn mouse_moved(
+fn mouse_moved(
     mut commands: Commands,
     held: Res<HeldItems>,
     mut queries: ParamSet<(
@@ -118,7 +116,7 @@ pub fn mouse_moved(
     *mouse_position_previous = mouse_position
 }
 
-pub fn grab_selection(
+fn grab_selection(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut held: ResMut<HeldItems>,
     hover_query: Query<Entity, (With<Hovered>, With<Draggable>)>,
@@ -129,5 +127,14 @@ pub fn grab_selection(
     } else if mouse_buttons.just_released(MouseButton::Left) {
         // Clear all selection if the mouse is let go
         held.items.clear();
+    }
+}
+
+pub struct SelectionPlugin;
+
+impl Plugin for SelectionPlugin {
+    fn build(&self, app: &mut bevy::prelude::App) {
+        app.init_resource::<HeldItems>();
+        app.add_systems(Update, (mouse_moved, grab_selection));
     }
 }
