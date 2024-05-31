@@ -29,6 +29,7 @@ pub struct Hoverable {
 /// components with the [Hoverable] component
 /// if the mouse is with the [Hoverable]'s radius
 #[derive(Component, Default)]
+#[component(storage = "SparseSet")]
 pub struct Hovered {
     connected: bool,
 }

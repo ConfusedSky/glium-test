@@ -1,3 +1,5 @@
 pub mod point;
 pub mod primitives;
-pub mod renderer;
+mod renderer;
+
+pub use renderer::RenderingPlugin;

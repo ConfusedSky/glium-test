@@ -1,12 +1,25 @@
 use std::num::NonZeroU32;
 
 use bevy::{
-    app::Plugin, ecs::{system::Resource, world::World}, window::RequestRedraw, winit::WinitWindows
+    app::Plugin,
+    ecs::{
+        event::EventReader,
+        system::{Commands, Resource},
+        world::World,
+    },
+    window::{RequestRedraw, WindowResized},
+    winit::WinitWindows,
 };
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
-use glutin::{context::NotCurrentGlContext, display::{GetGlDisplay, GlDisplay}};
+use glutin::{
+    context::NotCurrentGlContext,
+    display::{GetGlDisplay, GlDisplay},
+};
 
-use super::{point::{self, PointsData}, primitives};
+use super::{
+    point::{self, PointsData},
+    primitives,
+};
 use crate::position::Position;
 
 pub struct RenderParams<'a> {
@@ -60,8 +73,7 @@ impl Renderer<'_> {
 fn initialize_renderer(world: &mut World) {
     use raw_window_handle::HasRawWindowHandle;
 
-    let event_loop =
-        world.non_send_resource::<winit::event_loop::EventLoop<RequestRedraw>>();
+    let event_loop = world.non_send_resource::<winit::event_loop::EventLoop<RequestRedraw>>();
 
     // First we start by opening a new Window
     let display_builder = glutin_winit::DisplayBuilder::new();
@@ -118,11 +130,24 @@ fn render_system(world: &mut World) {
     world.insert_non_send_resource(renderer);
 }
 
+fn update_window_size(mut commands: Commands, mut window_resized: EventReader<WindowResized>) {
+    let last_event = window_resized.read().last();
+    let Some(last_event) = last_event else {
+        return;
+    };
+
+    let window_size = Position::from([last_event.width, last_event.height]);
+    println!("Window size set to: {:?}", window_size);
+
+    commands.insert_resource(WindowSize(window_size));
+}
+
 pub struct RenderingPlugin;
 
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_resource::<PointsData>();
+        app.add_systems(bevy::app::First, update_window_size);
         app.add_systems(bevy::app::Last, render_system);
     }
 
