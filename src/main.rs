@@ -1,5 +1,4 @@
 mod bezier;
-mod mouse;
 mod position;
 mod rendering;
 mod selection;
@@ -17,7 +16,6 @@ use bevy::{
     DefaultPlugins,
 };
 use bezier::update_bezier_curve;
-use mouse::MousePlugin;
 use rendering::RenderingPlugin;
 use selection::{grab_selection, mouse_moved, HeldItems};
 
@@ -47,7 +45,7 @@ fn main() {
         }),
         ..Default::default() // Make sure we have access to the winit windows before initializing the rendering windows
     }));
-    app.add_plugins((RenderingPlugin, MousePlugin));
+    app.add_plugins(RenderingPlugin);
 
     app.add_systems(Startup, bezier::initialize_bezier_curve);
     app.init_resource::<HeldItems>();

@@ -1,15 +1,16 @@
 use bevy::{
     ecs::{
-        change_detection::DetectChanges,
         component::Component,
         entity::Entity,
+        event::EventReader,
         query::With,
-        system::{Commands, ParamSet, Query, Res, ResMut, Resource},
+        system::{Commands, Local, ParamSet, Query, Res, ResMut, Resource},
     },
     input::{mouse::MouseButton, ButtonInput},
+    window::CursorMoved,
 };
 
-use crate::{mouse::MousePosition, position::Position};
+use crate::position::Position;
 
 #[derive(Resource, Default)]
 pub struct HeldItems {
@@ -49,7 +50,6 @@ pub struct Connection(pub Entity);
 pub fn mouse_moved(
     mut commands: Commands,
     held: Res<HeldItems>,
-    mouse_position: Res<MousePosition>,
     mut queries: ParamSet<(
         Query<(
             Entity,
@@ -60,18 +60,22 @@ pub fn mouse_moved(
         )>,
         Query<&mut Position>,
     )>,
+    mut cursor_evr: EventReader<CursorMoved>,
+    mut mouse_position_previous: Local<Position>,
 ) {
+    let new_mouse_position = cursor_evr.read().last();
     // If there has been no change in mouse position since last frame
     // We shouldn't waste time calculating differences
-    if !mouse_position.is_changed() {
+    let Some(mouse_position) = new_mouse_position else {
         return;
-    }
+    };
+    let mouse_position = Position::from([mouse_position.position.x, mouse_position.position.y]);
 
     // Only look for things to hover if we don't have a selection
     if held.items.is_empty() {
         let hover_query = queries.p0();
         for (entity, position, hoverable, hovered, connection) in hover_query.iter() {
-            let distance_squared = position.distance_squared(&mouse_position.position());
+            let distance_squared = position.distance_squared(&mouse_position);
             let radius_squared = hoverable.radius.powi(2);
 
             // If we are in range the commponent under the
@@ -101,7 +105,7 @@ pub fn mouse_moved(
     // Otherwise we want to move the selection
     } else {
         let mut drag_query = queries.p1();
-        let difference = mouse_position.position() - mouse_position.previous_position();
+        let difference = mouse_position - *mouse_position_previous;
         for entity in &held.items {
             // The saved entity could have been removed
             // in between selection and mouse_moved
@@ -110,6 +114,8 @@ pub fn mouse_moved(
             }
         }
     }
+
+    *mouse_position_previous = mouse_position
 }
 
 pub fn grab_selection(
