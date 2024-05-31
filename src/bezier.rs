@@ -12,7 +12,6 @@ use crate::{
         primitives,
     },
     selection::{Connection, Draggable, Hoverable},
-    System,
 };
 
 /// Calculates a point t along a bezier curve
@@ -126,7 +125,7 @@ pub fn update_bezier_curve(
     positions_query: Query<Ref<Position>>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     bezier_curve: Res<BezierCurve>,
-    system: Res<System>,
+    system: Res<crate::my_time::Time>,
     mut control_points: Local<ControlPoints>
 ) {
     // Look at each point if any of them have a position that has changed
