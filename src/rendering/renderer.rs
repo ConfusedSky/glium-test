@@ -123,13 +123,12 @@ pub struct RenderingPlugin;
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_resource::<PointsData>();
-        initialize_renderer(&mut app.world);
         app.add_systems(bevy::app::Last, render_system);
     }
 
-    // // This needs to happen in finish so that we can use the eventloop created in
-    // // the in the winit plugin
-    // fn finish(&self, app: &mut bevy::prelude::App) {
-        // initialize_renderer(&mut app.world);
-    // }
+    // This needs to happen in finish so that we can use the eventloop created in
+    // the in the winit plugin
+    fn finish(&self, app: &mut bevy::prelude::App) {
+        initialize_renderer(&mut app.world);
+    }
 }

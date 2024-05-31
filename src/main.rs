@@ -15,7 +15,7 @@ use bevy::{
     },
     prelude::PluginGroup,
     window::{Window, WindowPlugin},
-    winit::{WinitPlugin, WinitWindows},
+    winit::WinitWindows,
     DefaultPlugins,
 };
 use rendering::renderer::RenderingPlugin;
@@ -45,19 +45,16 @@ impl Default for System {
 
 fn main() {
     let mut app = bevy::prelude::App::new();
-    app.add_plugins(
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(Window {
-                    resolution: (800., 480.).into(),
-                    resizable: true,
-                    present_mode: bevy::window::PresentMode::AutoNoVsync,
-                    ..Default::default()
-                }),
-                ..Default::default() // Make sure we have access to the winit windows before initializing the rendering windows
-            })
-            .add_after::<WinitPlugin, _>(RenderingPlugin),
-    );
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            resolution: (800., 480.).into(),
+            resizable: true,
+            present_mode: bevy::window::PresentMode::AutoNoVsync,
+            ..Default::default()
+        }),
+        ..Default::default() // Make sure we have access to the winit windows before initializing the rendering windows
+    }));
+    app.add_plugins(RenderingPlugin);
 
     app.add_systems(Startup, |world: &mut World| {
         let winit_data = world.non_send_resource::<WinitWindows>();
