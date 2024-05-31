@@ -1,15 +1,15 @@
-use bevy::ecs::{
-    change_detection::DetectChanges,
-    component::Component,
-    entity::Entity,
-    query::With,
-    system::{Commands, ParamSet, Query, Res, ResMut, Resource},
+use bevy::{
+    ecs::{
+        change_detection::DetectChanges,
+        component::Component,
+        entity::Entity,
+        query::With,
+        system::{Commands, ParamSet, Query, Res, ResMut, Resource},
+    },
+    input::{mouse::MouseButton, ButtonInput},
 };
 
-use crate::{
-    mouse::{MouseButtons, MousePosition},
-    position::Position,
-};
+use crate::{mouse::MousePosition, position::Position};
 
 #[derive(Resource, Default)]
 pub struct HeldItems {
@@ -113,19 +113,14 @@ pub fn mouse_moved(
 }
 
 pub fn grab_selection(
-    // mut commands: Commands,
-    mouse_buttons: Res<MouseButtons>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut held: ResMut<HeldItems>,
     hover_query: Query<Entity, (With<Hovered>, With<Draggable>)>,
 ) {
-    if !mouse_buttons.is_changed() {
-        return;
-    }
-
-    if mouse_buttons.left_mouse_pressed() {
+    if mouse_buttons.just_pressed(MouseButton::Left) {
         // Put all items that are being hovered into the selection
         held.items.extend(hover_query.iter());
-    } else if mouse_buttons.left_mouse_released() {
+    } else if mouse_buttons.just_released(MouseButton::Left) {
         // Clear all selection if the mouse is let go
         held.items.clear();
     }
