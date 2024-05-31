@@ -18,11 +18,11 @@ use bevy::{
     winit::WinitWindows,
     DefaultPlugins,
 };
+use mouse::MousePlugin;
 use rendering::renderer::RenderingPlugin;
 
 use crate::{
     bezier::update_bezier_curve,
-    mouse::{MouseButtons, MousePosition},
     position::Position,
     rendering::renderer::WindowSize,
     selection::{grab_selection, mouse_moved, HeldItems},
@@ -54,7 +54,7 @@ fn main() {
         }),
         ..Default::default() // Make sure we have access to the winit windows before initializing the rendering windows
     }));
-    app.add_plugins(RenderingPlugin);
+    app.add_plugins((RenderingPlugin, MousePlugin));
 
     app.add_systems(Startup, |world: &mut World| {
         let winit_data = world.non_send_resource::<WinitWindows>();
@@ -63,11 +63,10 @@ fn main() {
         let window = winit_data.windows.values().next().unwrap();
         let (width, height): (f32, f32) = window.inner_size().into();
         let window_size = Position::from([width, height]);
+        println!("Window size set to: {:?}", window_size);
         world.insert_resource(WindowSize(window_size));
     });
     app.add_systems(Startup, bezier::initialize_bezier_curve);
-    app.init_resource::<MousePosition>();
-    app.init_resource::<MouseButtons>();
     app.init_resource::<HeldItems>();
     app.init_resource::<System>();
 

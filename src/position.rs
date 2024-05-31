@@ -4,7 +4,7 @@ use std::ops::Mul;
 use bevy::ecs::component::Component;
 use glium::uniforms::AsUniformValue;
 
-#[derive(Clone, Copy, Component, Default)]
+#[derive(Clone, Copy, Component, Default, Debug)]
 pub struct Position([f32; 2]);
 
 impl Position {
