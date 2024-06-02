@@ -127,6 +127,34 @@ fn initialize_bezier_curve(mut commands: Commands) {
     };
 
     commands.spawn(bezier_curve);
+
+    let start_handle = create_control_point(&mut commands, 800.0, 456.0).id();
+    let end_handle = create_control_point(&mut commands, 800.0, 24.0).id();
+    // The new start point is the old end point;
+    let start_point = commands.entity(end_point).insert(Connection(start_handle)).id();
+    let end_point = create_control_point(&mut commands, 1000.0, 240.0)
+        .insert(Connection(end_handle))
+        .insert(Selectable)
+        .insert(SolidWhenSelected)
+        .id();
+
+    let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
+    let handles = commands.spawn(handles).id();
+
+    let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
+    let curve = commands.spawn(curve).id();
+
+    let bezier_curve = BezierCurve {
+        start_point,
+        start_handle,
+        end_handle,
+        end_point,
+        handles,
+        curve,
+    };
+
+    commands.spawn(bezier_curve);
+
 }
 
 #[derive(Default)]
