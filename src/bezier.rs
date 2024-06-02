@@ -94,35 +94,32 @@ fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> Entit
 }
 
 fn initialize_bezier_curve(mut commands: Commands) {
-    for i in 0..2 {
-        let offset = i as f32 * 100.0;
-        let start_handle = create_control_point(&mut commands, 400.0 + offset, 456.0 + offset).id();
-        let end_handle = create_control_point(&mut commands, 400.0 + offset, 24.0 + offset).id();
+    let start_handle = create_control_point(&mut commands, 400.0, 456.0).id();
+    let end_handle = create_control_point(&mut commands, 400.0, 24.0).id();
 
-        let start_point = create_control_point(&mut commands, 200.0 + offset, 240.0 + offset)
-            .insert(Connection(start_handle))
-            .id();
-        let end_point = create_control_point(&mut commands, 600.0 + offset, 240.0 + offset)
-            .insert(Connection(end_handle))
-            .id();
+    let start_point = create_control_point(&mut commands, 200.0, 240.0)
+        .insert(Connection(start_handle))
+        .id();
+    let end_point = create_control_point(&mut commands, 600.0, 240.0)
+        .insert(Connection(end_handle))
+        .id();
 
-        let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
-        let handles = commands.spawn(handles).id();
+    let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
+    let handles = commands.spawn(handles).id();
 
-        let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
-        let curve = commands.spawn(curve).id();
+    let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
+    let curve = commands.spawn(curve).id();
 
-        let bezier_curve = BezierCurve {
-            start_point,
-            start_handle,
-            end_handle,
-            end_point,
-            handles,
-            curve,
-        };
+    let bezier_curve = BezierCurve {
+        start_point,
+        start_handle,
+        end_handle,
+        end_point,
+        handles,
+        curve,
+    };
 
-        commands.spawn(bezier_curve);
-    }
+    commands.spawn(bezier_curve);
 }
 
 #[derive(Default)]
