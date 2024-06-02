@@ -53,7 +53,7 @@ pub struct Selected;
 /// Any hover or drag events are mirrored for
 /// the host and the connected entity
 #[derive(Component)]
-pub struct Connection(pub Entity);
+pub struct Connection(pub Vec<Entity>);
 
 fn mouse_moved(
     mut commands: Commands,
@@ -94,7 +94,9 @@ fn mouse_moved(
 
                 // If there is a connected entity also set hovered on that element as well
                 if let Some(Connection(other)) = connection {
-                    commands.entity(*other).insert(Hovered { connected: true });
+                    for other in other {
+                        commands.entity(*other).insert(Hovered { connected: true });
+                    }
                 }
             } else if let Some(Hovered { connected }) = hovered {
                 // Connected hovers should be taken care of when
@@ -106,7 +108,9 @@ fn mouse_moved(
                 commands.entity(entity).remove::<Hovered>();
 
                 if let Some(Connection(other)) = connection {
-                    commands.entity(*other).remove::<Hovered>();
+                    for other in other {
+                        commands.entity(*other).remove::<Hovered>();
+                    }
                 }
             }
         }

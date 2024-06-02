@@ -1,6 +1,7 @@
 use bevy::{
     app::{Plugin, PostUpdate, Startup, Update},
     ecs::{
+        bundle::Bundle,
         change_detection::DetectChanges,
         component::Component,
         entity::Entity,
@@ -86,30 +87,57 @@ struct BezierCurve {
     pub curve: Entity,
 }
 
+#[derive(Bundle)]
+struct BaseControlPointBundle {
+    position: Position,
+    point: Point,
+    hoverable: Hoverable,
+    draggable: Draggable,
+    stroke: Stroke,
+}
+
+impl BaseControlPointBundle {
+    fn new(x: f32, y: f32) -> Self {
+        Self {
+            position: Position::new(x, y),
+            point: Point { size: 15.0 },
+            hoverable: Hoverable { radius: 20.0 },
+            draggable: Draggable,
+            stroke: Stroke::Outline,
+        }
+    }
+}
+
 fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
+    commands.spawn(BaseControlPointBundle::new(x, y))
+}
+
+fn create_endpoint<'c>(
+    commands: &'c mut Commands,
+    x: f32,
+    y: f32,
+    connections: &[Entity],
+) -> EntityCommands<'c> {
     commands.spawn((
-        Position::new(x, y),
-        Point { size: 15.0 },
-        Hoverable { radius: 20.0 },
-        Draggable,
-        Stroke::Outline,
+        BaseControlPointBundle::new(x, y),
+        Selectable,
+        SolidWhenSelected,
+        Connection(Vec::from(connections)),
     ))
 }
 
 fn initialize_bezier_curve(mut commands: Commands) {
-    let start_handle = create_control_point(&mut commands, 400.0, 456.0).id();
-    let end_handle = create_control_point(&mut commands, 400.0, 24.0).id();
+    let start_handle_1 = create_control_point(&mut commands, 400.0, 456.0).id();
+    let end_handle_1 = create_control_point(&mut commands, 400.0, 24.0).id();
+    let start_handle_2 = create_control_point(&mut commands, 800.0, 456.0).id();
+    let end_handle_2 = create_control_point(&mut commands, 800.0, 24.0).id();
 
-    let start_point = create_control_point(&mut commands, 200.0, 240.0)
-        .insert(Connection(start_handle))
-        .insert(Selectable)
-        .insert(SolidWhenSelected)
-        .id();
-    let end_point = create_control_point(&mut commands, 600.0, 240.0)
-        .insert(Connection(end_handle))
-        .insert(Selectable)
-        .insert(SolidWhenSelected)
-        .id();
+    let start_point_1 = create_endpoint(&mut commands, 200.0, 240.0, &[start_handle_1]).id();
+    let end_point_1 =
+        create_endpoint(&mut commands, 600.0, 240.0, &[end_handle_1, start_handle_2]).id();
+
+    let start_point_2 = end_point_1;
+    let end_point_2 = create_endpoint(&mut commands, 1000.0, 240.0, &[end_handle_2]).id();
 
     let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
     let handles = commands.spawn(handles).id();
@@ -118,25 +146,15 @@ fn initialize_bezier_curve(mut commands: Commands) {
     let curve = commands.spawn(curve).id();
 
     let bezier_curve = BezierCurve {
-        start_point,
-        start_handle,
-        end_handle,
-        end_point,
+        start_point: start_point_1,
+        start_handle: start_handle_1,
+        end_handle: end_handle_1,
+        end_point: end_point_1,
         handles,
         curve,
     };
 
     commands.spawn(bezier_curve);
-
-    let start_handle = create_control_point(&mut commands, 800.0, 456.0).id();
-    let end_handle = create_control_point(&mut commands, 800.0, 24.0).id();
-    // The new start point is the old end point;
-    let start_point = commands.entity(end_point).insert(Connection(start_handle)).id();
-    let end_point = create_control_point(&mut commands, 1000.0, 240.0)
-        .insert(Connection(end_handle))
-        .insert(Selectable)
-        .insert(SolidWhenSelected)
-        .id();
 
     let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
     let handles = commands.spawn(handles).id();
@@ -145,16 +163,15 @@ fn initialize_bezier_curve(mut commands: Commands) {
     let curve = commands.spawn(curve).id();
 
     let bezier_curve = BezierCurve {
-        start_point,
-        start_handle,
-        end_handle,
-        end_point,
+        start_point: start_point_2,
+        start_handle: start_handle_2,
+        end_handle: end_handle_2,
+        end_point: end_point_2,
         handles,
         curve,
     };
 
     commands.spawn(bezier_curve);
-
 }
 
 #[derive(Default)]
