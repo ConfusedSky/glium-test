@@ -1,6 +1,11 @@
 use bevy::ecs::component::Component;
 use glium::uniforms::AsUniformValue;
 
+#[derive(Component)]
+pub enum Stroke {
+    Outline,
+}
+
 #[derive(Clone, Copy, Debug, Component)]
 pub struct Color([f32; 4]);
 

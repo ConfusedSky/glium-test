@@ -1,7 +1,8 @@
+mod color;
 pub mod point;
 pub mod primitives;
 mod renderer;
-mod color;
 
-pub use renderer::RenderingPlugin;
 pub use color::Color;
+pub use color::Stroke;
+pub use renderer::RenderingPlugin;

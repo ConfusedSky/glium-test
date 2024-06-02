@@ -13,7 +13,7 @@ use crate::{
     position::Position,
     rendering::{
         point::{Point, Points},
-        primitives, Color,
+        primitives, Color, Stroke,
     },
     selection::{Connection, Draggable, Hoverable},
 };
@@ -90,6 +90,7 @@ fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> Entit
         Point { size: 15.0 },
         Hoverable { radius: 20.0 },
         Draggable,
+        Stroke::Outline,
     ))
 }
 

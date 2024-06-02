@@ -1,4 +1,4 @@
-use super::{renderer::RenderParams, Color};
+use super::{renderer::RenderParams, Color, Stroke};
 use crate::{position::Position, selection};
 use bevy::ecs::{
     component::Component,
@@ -188,15 +188,23 @@ impl<'draw> Renderer<'draw> {
 
     pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
         // Draw all points from ecs
-        let mut query = world.query::<(&Position, &Point, Option<&selection::Hovered>)>();
+        let mut query = world.query::<(
+            &Position,
+            &Point,
+            Option<&selection::Hovered>,
+            Option<&Stroke>,
+        )>();
         let iter = query
             .iter(world)
-            .map(|(position, Point { size }, hovered)| RenderData {
+            .map(|(position, Point { size }, hovered, stroke)| RenderData {
                 position: *position,
                 size: *size,
                 hovered: hovered.is_some(),
                 color: Color::RED,
-                outline: true,
+                outline: matches!(
+                    stroke.map(|stroke| matches!(stroke, Stroke::Outline)),
+                    Some(true)
+                ),
             });
         self.draw_points(render_params, iter);
 
