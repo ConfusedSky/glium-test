@@ -13,7 +13,7 @@ use crate::{
     position::Position,
     rendering::{
         point::{Point, Points},
-        primitives,
+        primitives, Color,
     },
     selection::{Connection, Draggable, Hoverable},
 };
@@ -159,9 +159,8 @@ fn update_bezier_curve(
     let elapsed = system.elapsed / 4.0;
     let point_iterator =
         generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
-    let color = [1.0, 0.0, 0.0, 1.0];
     for point in point_iterator {
-        points.draw_point(point, 10.0, color);
+        points.draw_point(point, 10.0, Color::RED);
     }
 
     // If any of the curve points have been changed we need to update the curve parts

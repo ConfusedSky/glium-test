@@ -1,4 +1,4 @@
-use super::renderer::RenderParams;
+use super::{renderer::RenderParams, Color};
 use crate::{position::Position, selection};
 use bevy::ecs::{
     component::Component,
@@ -22,7 +22,7 @@ pub struct RenderData {
     pub position: Position,
     pub size: f32,
     pub hovered: bool,
-    pub color: [f32; 4],
+    pub color: Color,
 }
 
 // Move this back over to point.rs after the refactor is complete
@@ -45,7 +45,7 @@ pub struct Points<'w> {
 }
 
 impl Points<'_> {
-    pub fn draw_point(&mut self, position: Position, size: f32, color: [f32; 4]) {
+    pub fn draw_point(&mut self, position: Position, size: f32, color: Color) {
         self.data.buffer.push(RenderData {
             position,
             size,
@@ -182,7 +182,6 @@ impl<'draw> Renderer<'draw> {
     }
 
     pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
-        let color: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
         // Draw all points from ecs
         let mut query = world.query::<(&Position, &Point, Option<&selection::Hovered>)>();
         let iter = query
@@ -191,7 +190,7 @@ impl<'draw> Renderer<'draw> {
                 position: *position,
                 size: *size,
                 hovered: hovered.is_some(),
-                color,
+                color: Color::RED,
             });
         self.draw_points(render_params, iter);
 
@@ -199,7 +198,7 @@ impl<'draw> Renderer<'draw> {
         let mut frame_points: Mut<PointsData> = world.resource_mut();
 
         // We use drain here so we can remove all elements from the buffer _and_
-        // we don't have to do any copying
+        // we don't have to do any additional cloning
         let iter = frame_points.buffer.drain(..);
         self.draw_points(render_params, iter);
     }
