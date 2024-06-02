@@ -22,6 +22,7 @@ pub struct RenderData {
     pub position: Position,
     pub size: f32,
     pub hovered: bool,
+    pub color: [f32; 4],
 }
 
 // Move this back over to point.rs after the refactor is complete
@@ -44,11 +45,12 @@ pub struct Points<'w> {
 }
 
 impl Points<'_> {
-    pub fn draw_point(&mut self, position: Position, size: f32) {
+    pub fn draw_point(&mut self, position: Position, size: f32, color: [f32; 4]) {
         self.data.buffer.push(RenderData {
             position,
             size,
             hovered: false,
+            color,
         });
     }
 }
@@ -112,7 +114,7 @@ impl<'draw> Renderer<'draw> {
         let fragment_shader_src = r#"#version 400
             out vec4 color;
 
-            uniform vec3 point_color;
+            uniform vec4 point_color;
 
             varying lowp vec2 texcoord;
 
@@ -125,7 +127,7 @@ impl<'draw> Renderer<'draw> {
 
             void main() {
                 float a = circle(texcoord, .9, 0.02);
-                color = vec4(point_color, a);
+                color = vec4(point_color.rgb, point_color.a * a);
             }
         "#;
 
@@ -152,14 +154,13 @@ impl<'draw> Renderer<'draw> {
     where
         It: IntoIterator<Item = RenderData>,
     {
-        let color: [f32; 3] = [1.0, 0.0, 0.0];
-        let hover_color: [f32; 3] = [0.0, 1.0, 0.0];
+        let hover_color: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
 
         for point in data.into_iter() {
             let uniforms = dynamic_uniform! {
                 point_size: &point.size,
                 window_size: render_params.screen_size,
-                point_color: if point.hovered { &hover_color } else { &color } ,
+                point_color: if point.hovered { &hover_color } else { &point.color } ,
                 offset: &point.position,
             };
             render_params
@@ -181,6 +182,7 @@ impl<'draw> Renderer<'draw> {
     }
 
     pub fn draw_from_world(&self, render_params: &mut RenderParams, world: &mut World) {
+        let color: [f32; 4] = [1.0, 0.0, 0.0, 1.0];
         // Draw all points from ecs
         let mut query = world.query::<(&Position, &Point, Option<&selection::Hovered>)>();
         let iter = query
@@ -189,6 +191,7 @@ impl<'draw> Renderer<'draw> {
                 position: *position,
                 size: *size,
                 hovered: hovered.is_some(),
+                color,
             });
         self.draw_points(render_params, iter);
 

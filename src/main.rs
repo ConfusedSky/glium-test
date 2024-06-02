@@ -23,7 +23,7 @@ fn main() {
             present_mode: bevy::window::PresentMode::AutoNoVsync,
             ..Default::default()
         }),
-        ..Default::default() // Make sure we have access to the winit windows before initializing the rendering windows
+        ..Default::default()
     }));
     app.add_plugins((TimePlugin, SelectionPlugin, RenderingPlugin, BezierPlugin));
 
