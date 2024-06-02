@@ -23,6 +23,7 @@ pub struct RenderData {
     pub size: f32,
     pub hovered: bool,
     pub color: Color,
+    pub outline: bool,
 }
 
 // Move this back over to point.rs after the refactor is complete
@@ -51,6 +52,7 @@ impl Points<'_> {
             size,
             hovered: false,
             color,
+            outline: false,
         });
     }
 }
@@ -115,18 +117,20 @@ impl<'draw> Renderer<'draw> {
             out vec4 color;
 
             uniform vec4 point_color;
+            uniform float inner_fill_cutoff;
 
             varying lowp vec2 texcoord;
 
-            float circle(in vec2 _st, in float _radius, in float edge){
-                vec2 dist = _st-vec2(0.5);
-                return 1.-smoothstep(_radius-(_radius*edge),
-                                    _radius+(_radius*edge),
-                                    dot(dist,dist)*4.0);
+            float circle(in vec2 _dist, in float _radius, in float _edge ){
+                return 1.-smoothstep(_radius-(_radius*_edge),
+                                    _radius+(_radius*_edge),
+                                    dot(_dist,_dist)*4.0);
             }
 
             void main() {
-                float a = circle(texcoord, .9, 0.02);
+                vec2 dist = texcoord-vec2(0.5);
+                float a = circle(dist, .9, 0.02);
+                a -= circle(dist, inner_fill_cutoff, 0.02);
                 color = vec4(point_color.rgb, point_color.a * a);
             }
         "#;
@@ -162,6 +166,7 @@ impl<'draw> Renderer<'draw> {
                 window_size: render_params.screen_size,
                 point_color: if point.hovered { &hover_color } else { &point.color } ,
                 offset: &point.position,
+                inner_fill_cutoff: if point.outline { &(0.7 as f32) } else { &(0.0 as f32) },
             };
             render_params
                 .target
@@ -191,6 +196,7 @@ impl<'draw> Renderer<'draw> {
                 size: *size,
                 hovered: hovered.is_some(),
                 color: Color::RED,
+                outline: true,
             });
         self.draw_points(render_params, iter);
 
