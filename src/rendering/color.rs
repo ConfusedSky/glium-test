@@ -4,6 +4,7 @@ use glium::uniforms::AsUniformValue;
 #[derive(Component)]
 pub enum Stroke {
     Outline,
+    Solid,
 }
 
 #[derive(Clone, Copy, Debug, Component)]

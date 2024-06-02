@@ -14,8 +14,9 @@ use bevy::{
 use crate::position::Position;
 
 #[derive(Resource, Default)]
-struct HeldItems {
-    items: Vec<Entity>,
+struct SelectionData {
+    held_items: Vec<Entity>,
+    selected_item: Option<Entity>,
 }
 
 /// If this component is added to an entity
@@ -42,6 +43,12 @@ pub struct Hovered {
 #[derive(Component)]
 pub struct Draggable;
 
+#[derive(Component)]
+pub struct Selectable;
+
+#[derive(Component)]
+pub struct Selected;
+
 /// This entity is connected to another entity
 /// Any hover or drag events are mirrored for
 /// the host and the connected entity
@@ -50,7 +57,7 @@ pub struct Connection(pub Entity);
 
 fn mouse_moved(
     mut commands: Commands,
-    held: Res<HeldItems>,
+    held: Res<SelectionData>,
     mut queries: ParamSet<(
         Query<(
             Entity,
@@ -73,7 +80,7 @@ fn mouse_moved(
     let mouse_position = Position::from([mouse_position.position.x, mouse_position.position.y]);
 
     // Only look for things to hover if we don't have a selection
-    if held.items.is_empty() {
+    if held.held_items.is_empty() {
         let hover_query = queries.p0();
         for (entity, position, hoverable, hovered, connection) in hover_query.iter() {
             let distance_squared = position.distance_squared(&mouse_position);
@@ -107,7 +114,7 @@ fn mouse_moved(
     } else {
         let mut drag_query = queries.p1();
         let difference = mouse_position - *mouse_position_previous;
-        for entity in &held.items {
+        for entity in &held.held_items {
             // The saved entity could have been removed
             // in between selection and mouse_moved
             if let Ok(mut position) = drag_query.get_mut(*entity) {
@@ -120,16 +127,32 @@ fn mouse_moved(
 }
 
 fn grab_selection(
+    mut commands: Commands,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut held: ResMut<HeldItems>,
-    hover_query: Query<Entity, (With<Hovered>, With<Draggable>)>,
+    mut selection: ResMut<SelectionData>,
+    mut selection_queries: ParamSet<(
+        Query<Entity, (With<Hovered>, With<Draggable>)>,
+        Query<Entity, (With<Hovered>, With<Selectable>)>,
+    )>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Left) {
         // Put all items that are being hovered into the selection
-        held.items.extend(hover_query.iter());
+        selection.held_items.extend(selection_queries.p0().iter());
+        // For now clear selection on click
+        // However, this probably needs some more complicated
+        // logic going forward
+        if let Some(entity) = &selection.selected_item {
+            commands.entity(*entity).remove::<Selected>();
+        }
+        selection.selected_item = None;
     } else if mouse_buttons.just_released(MouseButton::Left) {
         // Clear all selection if the mouse is let go
-        held.items.clear();
+        selection.held_items.clear();
+        selection.selected_item = selection_queries.p1().iter().next();
+
+        if let Some(entity) = &selection.selected_item {
+            commands.entity(*entity).insert(Selected);
+        }
     }
 }
 
@@ -137,7 +160,7 @@ pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
-        app.init_resource::<HeldItems>();
+        app.init_resource::<SelectionData>();
         app.add_systems(Update, (mouse_moved, grab_selection));
     }
 }

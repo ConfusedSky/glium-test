@@ -1,9 +1,11 @@
 use bevy::{
-    app::{Plugin, PostUpdate, Startup},
+    app::{Plugin, PostUpdate, Startup, Update},
     ecs::{
         change_detection::DetectChanges,
         component::Component,
         entity::Entity,
+        query::{Added, With},
+        removal_detection::RemovedComponents,
         system::{Commands, EntityCommands, Local, Query, Res},
         world::Ref,
     },
@@ -15,7 +17,7 @@ use crate::{
         point::{Point, Points},
         primitives, Color, Stroke,
     },
-    selection::{Connection, Draggable, Hoverable},
+    selection::{Connection, Draggable, Hoverable, Selectable, Selected},
 };
 
 /// Calculates a point t along a bezier curve
@@ -100,9 +102,13 @@ fn initialize_bezier_curve(mut commands: Commands) {
 
     let start_point = create_control_point(&mut commands, 200.0, 240.0)
         .insert(Connection(start_handle))
+        .insert(Selectable)
+        .insert(SolidWhenSelected)
         .id();
     let end_point = create_control_point(&mut commands, 600.0, 240.0)
         .insert(Connection(end_handle))
+        .insert(Selectable)
+        .insert(SolidWhenSelected)
         .id();
 
     let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
@@ -198,11 +204,37 @@ fn update_bezier_curve_system(
     }
 }
 
+#[derive(Component)]
+struct SolidWhenSelected;
+
+// For every component that was selected this frame, if it has a stroke component and has the solid when selected
+// marker set the stroke to solid
+fn solid_when_selected_system(
+    mut stroke_query: Query<&mut Stroke, With<SolidWhenSelected>>,
+    selected_added: Query<Entity, Added<Selected>>,
+    mut selected_removed: RemovedComponents<Selected>,
+) {
+    for entity in selected_added.iter() {
+        let Ok(mut stroke) = stroke_query.get_mut(entity) else {
+            continue;
+        };
+        *stroke = Stroke::Solid;
+    }
+
+    for entity in selected_removed.read() {
+        let Ok(mut stroke) = stroke_query.get_mut(entity) else {
+            continue;
+        };
+        *stroke = Stroke::Outline;
+    }
+}
+
 pub struct BezierPlugin;
 
 impl Plugin for BezierPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_systems(Startup, initialize_bezier_curve);
+        app.add_systems(Update, solid_when_selected_system);
         app.add_systems(PostUpdate, update_bezier_curve_system);
     }
 }
