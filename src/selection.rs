@@ -1,11 +1,14 @@
 use bevy::{
-    app::{Plugin, Update}, ecs::{
+    app::{Plugin, Update},
+    ecs::{
         component::Component,
         entity::Entity,
         event::EventReader,
         query::With,
         system::{Commands, Local, ParamSet, Query, Res, ResMut, Resource},
-    }, input::{mouse::MouseButton, ButtonInput}, window::CursorMoved
+    },
+    input::{mouse::MouseButton, ButtonInput},
+    window::CursorMoved,
 };
 
 use crate::position::Position;

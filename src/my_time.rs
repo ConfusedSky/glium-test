@@ -1,6 +1,9 @@
 use std::time::SystemTime;
 
-use bevy::{app::{First, Plugin}, ecs::system::{ResMut, Resource}};
+use bevy::{
+    app::{First, Plugin},
+    ecs::system::{ResMut, Resource},
+};
 
 #[derive(Resource)]
 pub struct Time {
