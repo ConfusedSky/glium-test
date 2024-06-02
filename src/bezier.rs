@@ -94,47 +94,48 @@ fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> Entit
 }
 
 fn initialize_bezier_curve(mut commands: Commands) {
-    let start_handle = create_control_point(&mut commands, 400.0, 456.0).id();
-    let end_handle = create_control_point(&mut commands, 400.0, 24.0).id();
+    for i in 0..2 {
+        let offset = i as f32 * 100.0;
+        let start_handle = create_control_point(&mut commands, 400.0 + offset, 456.0 + offset).id();
+        let end_handle = create_control_point(&mut commands, 400.0 + offset, 24.0 + offset).id();
 
-    let start_point = create_control_point(&mut commands, 200.0, 240.0)
-        .insert(Connection(start_handle))
-        .id();
-    let end_point = create_control_point(&mut commands, 600.0, 240.0)
-        .insert(Connection(end_handle))
-        .id();
+        let start_point = create_control_point(&mut commands, 200.0 + offset, 240.0 + offset)
+            .insert(Connection(start_handle))
+            .id();
+        let end_point = create_control_point(&mut commands, 600.0 + offset, 240.0 + offset)
+            .insert(Connection(end_handle))
+            .id();
 
-    let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
-    let handles = commands.spawn(handles).id();
+        let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
+        let handles = commands.spawn(handles).id();
 
-    let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
-    let curve = commands.spawn(curve).id();
+        let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
+        let curve = commands.spawn(curve).id();
 
-    let bezier_curve = BezierCurve {
-        start_point,
-        start_handle,
-        end_handle,
-        end_point,
-        handles,
-        curve,
-    };
+        let bezier_curve = BezierCurve {
+            start_point,
+            start_handle,
+            end_handle,
+            end_point,
+            handles,
+            curve,
+        };
 
-    commands.spawn(bezier_curve);
+        commands.spawn(bezier_curve);
+    }
 }
 
 #[derive(Default)]
 struct ControlPoints([Position; 4]);
 
 fn update_bezier_curve(
-    mut points: Points,
-    positions_query: Query<Ref<Position>>,
-    mut primitives_query: Query<&mut primitives::Primatives>,
-    bezier_curve_query: Query<&BezierCurve>,
-    system: Res<crate::my_time::Time>,
-    mut control_points: Local<ControlPoints>,
+    bezier_curve: &BezierCurve,
+    points: &mut Points,
+    positions_query: &Query<Ref<Position>>,
+    primitives_query: &mut Query<&mut primitives::Primatives>,
+    system: &Res<crate::my_time::Time>,
+    control_points: &mut Local<ControlPoints>,
 ) {
-    let bezier_curve = bezier_curve_query.single();
-
     // Look at each point if any of them have a position that has changed
     let control_points_query = positions_query.iter_many([
         bezier_curve.start_point,
@@ -179,11 +180,31 @@ fn update_bezier_curve(
     curve.set_positions(curve_points);
 }
 
+fn update_bezier_curve_system(
+    bezier_curve_query: Query<&BezierCurve>,
+    mut points: Points,
+    positions_query: Query<Ref<Position>>,
+    mut primitives_query: Query<&mut primitives::Primatives>,
+    system: Res<crate::my_time::Time>,
+    mut control_points: Local<ControlPoints>,
+) {
+    for bezier_curve in bezier_curve_query.iter() {
+        update_bezier_curve(
+            bezier_curve,
+            &mut points,
+            &positions_query,
+            &mut primitives_query,
+            &system,
+            &mut control_points,
+        );
+    }
+}
+
 pub struct BezierPlugin;
 
 impl Plugin for BezierPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.add_systems(Startup, initialize_bezier_curve);
-        app.add_systems(PostUpdate, update_bezier_curve);
+        app.add_systems(PostUpdate, update_bezier_curve_system);
     }
 }
