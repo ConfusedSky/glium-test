@@ -5,6 +5,7 @@ use bevy::{
         entity::Entity,
         event::EventReader,
         query::With,
+        schedule::IntoSystemConfigs,
         system::{Commands, Local, ParamSet, Query, Res, ResMut, Resource},
     },
     input::{mouse::MouseButton, ButtonInput},
@@ -47,6 +48,7 @@ pub struct Draggable;
 pub struct Selectable;
 
 #[derive(Component)]
+#[component(storage = "SparseSet")]
 pub struct Selected;
 
 /// This entity is connected to another entity
@@ -142,21 +144,34 @@ fn grab_selection(
     if mouse_buttons.just_pressed(MouseButton::Left) {
         // Put all items that are being hovered into the selection
         selection.held_items.extend(selection_queries.p0().iter());
-        // For now clear selection on click
-        // However, this probably needs some more complicated
-        // logic going forward
-        if let Some(entity) = &selection.selected_item {
-            commands.entity(*entity).remove::<Selected>();
+
+        let old_entity = selection.selected_item;
+        let new_entity = selection_queries.p1().iter().next();
+
+        let different_entity = matches!((old_entity, new_entity), (Some(a), Some(b)) if a != b);
+        let not_dragging = selection.held_items.is_empty();
+
+        // Right now selection behavior only depends on just clicked,
+        // maybe this should be extended to handle the whole click instead
+        // We also should only continue doing checks if the item actually changed
+        // If there is currently a selected item then remove the
+        // selected component from that item
+        if let Some(entity) = old_entity {
+            // Only deselect if we aren't currently dragging
+            // Or we are selecting a new item
+            if different_entity || not_dragging {
+                commands.entity(entity).remove::<Selected>();
+            }
         }
-        selection.selected_item = None;
+
+        // If we selected a new item add the selected component to that element
+        if let Some(entity) = new_entity {
+            commands.entity(entity).insert(Selected);
+            selection.selected_item = new_entity;
+        }
     } else if mouse_buttons.just_released(MouseButton::Left) {
         // Clear all selection if the mouse is let go
         selection.held_items.clear();
-        selection.selected_item = selection_queries.p1().iter().next();
-
-        if let Some(entity) = &selection.selected_item {
-            commands.entity(*entity).insert(Selected);
-        }
     }
 }
 
@@ -165,6 +180,6 @@ pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_resource::<SelectionData>();
-        app.add_systems(Update, (mouse_moved, grab_selection));
+        app.add_systems(Update, (mouse_moved, grab_selection).chain());
     }
 }
