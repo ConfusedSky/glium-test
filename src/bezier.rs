@@ -175,6 +175,7 @@ fn initialize_bezier_curve(mut commands: Commands) {
 struct ControlPoints([Position; 4]);
 
 fn update_bezier_curve(
+    commands: &mut Commands,
     bezier_curve: &BezierCurve,
     points: &mut Points,
     lines: &mut Lines,
@@ -224,12 +225,21 @@ fn update_bezier_curve(
     }
 
     // Only draw the start/end handle if that point is selected
+    // And (un)hide handles associated with the selected point
     if start_selected {
         lines.draw_line(control_points.0[0], control_points.0[1]);
+        commands
+            .entity(bezier_curve.start_handle)
+            .remove::<Hidden>();
+    } else {
+        commands.entity(bezier_curve.start_handle).insert(Hidden);
     }
 
     if end_selected {
         lines.draw_line(control_points.0[2], control_points.0[3]);
+        commands.entity(bezier_curve.end_handle).remove::<Hidden>();
+    } else {
+        commands.entity(bezier_curve.end_handle).insert(Hidden);
     }
 
     // If any of the curve points have been changed we need to update the curve parts
@@ -244,6 +254,7 @@ fn update_bezier_curve(
 }
 
 fn update_bezier_curve_system(
+    mut commands: Commands,
     bezier_curve_query: Query<&BezierCurve>,
     mut points: Points,
     mut lines: Lines,
@@ -254,6 +265,7 @@ fn update_bezier_curve_system(
 ) {
     for bezier_curve in bezier_curve_query.iter() {
         update_bezier_curve(
+            &mut commands,
             bezier_curve,
             &mut points,
             &mut lines,
