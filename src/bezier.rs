@@ -16,7 +16,8 @@ use crate::{
     position::Position,
     rendering::{
         point::{Point, Points},
-        primitives, Color, Stroke,
+        primitives::{self, Lines},
+        Color, Stroke,
     },
     selection::{Connection, Draggable, Hoverable, Selectable, Selected},
 };
@@ -31,7 +32,7 @@ fn bezier(
     t: f64,
 ) -> Position {
     assert!(t >= 0.0);
-    assert!(t < 1.0);
+    assert!(t <= 1.0);
 
     let t_inv = 1.0 - t;
     let t1 = t_inv.powi(3);
@@ -51,11 +52,15 @@ fn generate_bezier_points_with_offset(
     subdivisions: Option<usize>,
     offset: Option<f64>,
 ) -> impl Iterator<Item = Position> {
+    let offset = offset.unwrap_or_default();
     let subdivisions = subdivisions.unwrap_or(60);
     let mut shape_points = Vec::with_capacity(subdivisions);
-    let offset = offset.unwrap_or_default();
 
-    for i in 0..subdivisions {
+    // Add one to the subdivisions if there is no offset so
+    // if perfectly fills the space
+    // if you add one to the subdivisions and there is
+    // an offset there will be overlapping points
+    for i in 0..subdivisions + if offset <= 0.1 { 1 } else { 0 } {
         let t = if offset > 0.0 {
             let t = i as f64 / subdivisions as f64 + offset;
             t.fract()
@@ -83,7 +88,6 @@ struct BezierCurve {
     pub end_handle: Entity,
     pub end_point: Entity,
 
-    pub handles: Entity,
     pub curve: Entity,
 }
 
@@ -139,9 +143,6 @@ fn initialize_bezier_curve(mut commands: Commands) {
     let start_point_2 = end_point_1;
     let end_point_2 = create_endpoint(&mut commands, 1000.0, 240.0, &[end_handle_2]).id();
 
-    let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
-    let handles = commands.spawn(handles).id();
-
     let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
     let curve = commands.spawn(curve).id();
 
@@ -150,14 +151,10 @@ fn initialize_bezier_curve(mut commands: Commands) {
         start_handle: start_handle_1,
         end_handle: end_handle_1,
         end_point: end_point_1,
-        handles,
         curve,
     };
 
     commands.spawn(bezier_curve);
-
-    let handles = primitives::Primatives::new(&[], primitives::Type::Line, 2.0);
-    let handles = commands.spawn(handles).id();
 
     let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
     let curve = commands.spawn(curve).id();
@@ -167,7 +164,6 @@ fn initialize_bezier_curve(mut commands: Commands) {
         start_handle: start_handle_2,
         end_handle: end_handle_2,
         end_point: end_point_2,
-        handles,
         curve,
     };
 
@@ -180,6 +176,7 @@ struct ControlPoints([Position; 4]);
 fn update_bezier_curve(
     bezier_curve: &BezierCurve,
     points: &mut Points,
+    lines: &mut Lines,
     positions_query: &Query<Ref<Position>>,
     primitives_query: &mut Query<&mut primitives::Primatives>,
     system: &Res<crate::my_time::Time>,
@@ -215,15 +212,15 @@ fn update_bezier_curve(
         points.draw_point(point, 10.0, Color::RED);
     }
 
+    lines.draw_line(control_points.0[0], control_points.0[1]);
+    lines.draw_line(control_points.0[2], control_points.0[3]);
+
     // If any of the curve points have been changed we need to update the curve parts
     if !has_change {
         return;
     }
 
-    let [mut handles, mut curve] =
-        primitives_query.many_mut([bezier_curve.handles, bezier_curve.curve]);
-
-    handles.set_positions(control_points.0.clone());
+    let mut curve = primitives_query.get_mut(bezier_curve.curve).unwrap();
 
     let curve_points = generate_bezier_points(&control_points.0);
     curve.set_positions(curve_points);
@@ -232,6 +229,7 @@ fn update_bezier_curve(
 fn update_bezier_curve_system(
     bezier_curve_query: Query<&BezierCurve>,
     mut points: Points,
+    mut lines: Lines,
     positions_query: Query<Ref<Position>>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     system: Res<crate::my_time::Time>,
@@ -241,6 +239,7 @@ fn update_bezier_curve_system(
         update_bezier_curve(
             bezier_curve,
             &mut points,
+            &mut lines,
             &positions_query,
             &mut primitives_query,
             &system,

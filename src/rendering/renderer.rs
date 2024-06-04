@@ -18,7 +18,7 @@ use glutin::{
 
 use super::{
     point::{self, PointsData},
-    primitives,
+    primitives::{self, LinesData},
 };
 use crate::position::Position;
 
@@ -62,6 +62,10 @@ impl Renderer<'_> {
         for mut data in query.iter_mut(world) {
             self.primitives_renderer.draw(&mut render_params, &mut data);
         }
+
+        let mut data = world.resource_mut::<LinesData>();
+        self.primitives_renderer
+            .draw_immediate(&mut render_params, &mut data);
 
         self.points_renderer
             .draw_from_world(&mut render_params, world);
@@ -147,6 +151,7 @@ pub struct RenderingPlugin;
 impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_resource::<PointsData>();
+        app.init_resource::<LinesData>();
         app.add_systems(bevy::app::First, update_window_size);
         app.add_systems(bevy::app::Last, render_system);
     }

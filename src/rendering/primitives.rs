@@ -2,7 +2,10 @@ use std::sync::atomic::AtomicUsize;
 
 use super::renderer::RenderParams;
 use crate::position::Position;
-use bevy::ecs::component::Component;
+use bevy::ecs::{
+    component::Component,
+    system::{ResMut, Resource, SystemParam},
+};
 use glium::{
     dynamic_uniform, glutin::surface::WindowSurface, implement_vertex, Display, DrawParameters,
     Program, Surface, VertexBuffer,
@@ -41,7 +44,26 @@ impl From<Position> for Vertex {
     }
 }
 
-pub struct Renderer {
+const MAX_LINES: usize = 100;
+
+#[derive(Resource, Default)]
+pub(super) struct LinesData {
+    lines_data: Vec<Position>,
+}
+
+#[derive(SystemParam)]
+pub struct Lines<'w> {
+    data: ResMut<'w, LinesData>,
+}
+
+impl Lines<'_> {
+    pub fn draw_line(&mut self, from: Position, to: Position) {
+        self.data.lines_data.push(from);
+        self.data.lines_data.push(to);
+    }
+}
+
+pub(super) struct Renderer {
     program: Program,
     // Maybe it could be a good idea to just have the array be a fixed size if this becomes a performance
     // Issue and set it with a constant if we would like to reduce indirection
@@ -86,6 +108,33 @@ impl Renderer {
             buffers: Vec::with_capacity(64),
             program,
         }
+    }
+
+    pub fn draw_immediate(&mut self, render_params: &mut RenderParams, data: &mut LinesData) {
+        assert!(data.lines_data.len() < MAX_LINES * 2);
+
+        let uniforms = dynamic_uniform! {
+            window_size: render_params.screen_size,
+        };
+
+        let data: Vec<_> = data.lines_data.drain(..).map(Vertex::from).collect();
+        let buffer = glium::VertexBuffer::new(render_params.display, &data).unwrap();
+
+        let params = DrawParameters {
+            line_width: Some(2.0),
+            ..Default::default()
+        };
+
+        render_params
+            .target
+            .draw(
+                &buffer,
+                &glium::index::NoIndices(glium::index::PrimitiveType::LinesList),
+                &self.program,
+                &uniforms,
+                &params,
+            )
+            .unwrap();
     }
 
     pub fn draw(&mut self, render_params: &mut RenderParams, data: &mut Primatives) {

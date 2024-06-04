@@ -33,14 +33,14 @@ pub struct Point {
 }
 
 #[derive(Resource, Default)]
-pub struct PointsData {
+pub(super) struct PointsData {
     buffer: Vec<RenderData>,
 }
 
-#[derive(SystemParam)]
 /// Note this probably limits parallelizability by having a
 /// Mutable reference here especially if multiple systems
 /// need to draw points
+#[derive(SystemParam)]
 pub struct Points<'w> {
     data: ResMut<'w, PointsData>,
 }
@@ -57,7 +57,7 @@ impl Points<'_> {
     }
 }
 
-pub struct Renderer<'draw> {
+pub(super) struct Renderer<'draw> {
     /// Quad buffer for rendering points
     buffer: VertexBuffer<Vertex>,
     /// Indicies of the quad buffer
