@@ -4,7 +4,7 @@ use bevy::{
         component::Component,
         entity::Entity,
         event::EventReader,
-        query::With,
+        query::{With, Without},
         schedule::IntoSystemConfigs,
         system::{Commands, Local, ParamSet, Query, Res, ResMut, Resource},
     },
@@ -12,7 +12,7 @@ use bevy::{
     window::CursorMoved,
 };
 
-use crate::position::Position;
+use crate::{hidden::Hidden, position::Position};
 
 #[derive(Resource, Default)]
 struct SelectionData {
@@ -61,13 +61,16 @@ fn mouse_moved(
     mut commands: Commands,
     held: Res<SelectionData>,
     mut queries: ParamSet<(
-        Query<(
-            Entity,
-            &Position,
-            &Hoverable,
-            Option<&Hovered>,
-            Option<&Connection>,
-        )>,
+        Query<
+            (
+                Entity,
+                &Position,
+                &Hoverable,
+                Option<&Hovered>,
+                Option<&Connection>,
+            ),
+            Without<Hidden>,
+        >,
         Query<&mut Position>,
     )>,
     mut cursor_evr: EventReader<CursorMoved>,
@@ -138,7 +141,7 @@ fn grab_selection(
     mut selection: ResMut<SelectionData>,
     mut selection_queries: ParamSet<(
         Query<Entity, (With<Hovered>, With<Draggable>)>,
-        Query<Entity, (With<Hovered>, With<Selectable>)>,
+        Query<Entity, (With<Hovered>, (With<Selectable>, Without<Hidden>))>,
     )>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Left) {

@@ -1,5 +1,5 @@
 use super::{renderer::RenderParams, Color, Stroke};
-use crate::{position::Position, selection};
+use crate::{hidden::Hidden, position::Position, selection};
 use bevy::ecs::{
     component::Component,
     system::{ResMut, Resource, SystemParam},
@@ -193,19 +193,20 @@ impl<'draw> Renderer<'draw> {
             &Point,
             Option<&selection::Hovered>,
             Option<&Stroke>,
+            Option<&Hidden>,
         )>();
         let iter = query
             .iter(world)
-            .map(|(position, Point { size }, hovered, stroke)| RenderData {
-                position: *position,
-                size: *size,
-                hovered: hovered.is_some(),
-                color: Color::RED,
-                outline: matches!(
-                    stroke.map(|stroke| matches!(stroke, Stroke::Outline)),
-                    Some(true)
-                ),
-            });
+            .filter(|(_, _, _, _, hidden)| !hidden.is_some())
+            .map(
+                |(position, Point { size }, hovered, stroke, _hidden)| RenderData {
+                    position: *position,
+                    size: *size,
+                    hovered: hovered.is_some(),
+                    color: Color::RED,
+                    outline: matches!(stroke, Some(Stroke::Outline)),
+                },
+            );
         self.draw_points(render_params, iter);
 
         // Draw single frame points

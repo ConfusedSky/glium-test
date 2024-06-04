@@ -13,6 +13,7 @@ use bevy::{
 };
 
 use crate::{
+    hidden::Hidden,
     position::Position,
     rendering::{
         point::{Point, Points},
@@ -112,8 +113,8 @@ impl BaseControlPointBundle {
     }
 }
 
-fn create_control_point<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
-    commands.spawn(BaseControlPointBundle::new(x, y))
+fn create_handle<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
+    commands.spawn((BaseControlPointBundle::new(x, y), Hidden))
 }
 
 fn create_endpoint<'c>(
@@ -131,10 +132,10 @@ fn create_endpoint<'c>(
 }
 
 fn initialize_bezier_curve(mut commands: Commands) {
-    let start_handle_1 = create_control_point(&mut commands, 400.0, 456.0).id();
-    let end_handle_1 = create_control_point(&mut commands, 400.0, 24.0).id();
-    let start_handle_2 = create_control_point(&mut commands, 800.0, 456.0).id();
-    let end_handle_2 = create_control_point(&mut commands, 800.0, 24.0).id();
+    let start_handle_1 = create_handle(&mut commands, 400.0, 456.0).id();
+    let end_handle_1 = create_handle(&mut commands, 400.0, 24.0).id();
+    let start_handle_2 = create_handle(&mut commands, 800.0, 456.0).id();
+    let end_handle_2 = create_handle(&mut commands, 800.0, 24.0).id();
 
     let start_point_1 = create_endpoint(&mut commands, 200.0, 240.0, &[start_handle_1]).id();
     let end_point_1 =
