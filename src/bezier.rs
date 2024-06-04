@@ -177,7 +177,7 @@ fn update_bezier_curve(
     bezier_curve: &BezierCurve,
     points: &mut Points,
     lines: &mut Lines,
-    positions_query: &Query<Ref<Position>>,
+    positions_query: &Query<(Ref<Position>, Option<&Selected>)>,
     primitives_query: &mut Query<&mut primitives::Primatives>,
     system: &Res<crate::my_time::Time>,
     control_points: &mut Local<ControlPoints>,
@@ -191,8 +191,10 @@ fn update_bezier_curve(
     ]);
 
     let mut has_change = false;
+    let mut start_selected = false;
+    let mut end_selected = false;
 
-    for (i, point) in control_points_query.enumerate() {
+    for (i, (point, selected)) in control_points_query.enumerate() {
         if point.is_changed() {
             has_change = true;
         }
@@ -203,6 +205,14 @@ fn update_bezier_curve(
         // below. May be able to make improvements in a lot of places
         // since right now we are doing a lot of unnecesary cloning/copying
         control_points.0[i] = point.as_ref().clone();
+
+        if i == 0 && selected.is_some() {
+            start_selected = true;
+        }
+
+        if i == 3 && selected.is_some() {
+            end_selected = true;
+        }
     }
     // We always want to update the curve follower
     let elapsed = system.elapsed / 4.0;
@@ -212,8 +222,14 @@ fn update_bezier_curve(
         points.draw_point(point, 10.0, Color::RED);
     }
 
-    lines.draw_line(control_points.0[0], control_points.0[1]);
-    lines.draw_line(control_points.0[2], control_points.0[3]);
+    // Only draw the start/end handle if that point is selected
+    if start_selected {
+        lines.draw_line(control_points.0[0], control_points.0[1]);
+    }
+
+    if end_selected {
+        lines.draw_line(control_points.0[2], control_points.0[3]);
+    }
 
     // If any of the curve points have been changed we need to update the curve parts
     if !has_change {
@@ -230,7 +246,7 @@ fn update_bezier_curve_system(
     bezier_curve_query: Query<&BezierCurve>,
     mut points: Points,
     mut lines: Lines,
-    positions_query: Query<Ref<Position>>,
+    positions_query: Query<(Ref<Position>, Option<&Selected>)>,
     mut primitives_query: Query<&mut primitives::Primatives>,
     system: Res<crate::my_time::Time>,
     mut control_points: Local<ControlPoints>,
