@@ -82,6 +82,17 @@ fn generate_bezier_points_with_offset(
     shape_points.into_iter()
 }
 
+// Components that exist for reverse lookup of a curve from a point
+#[derive(Component)]
+struct BezierHandle(Entity);
+
+// Start and end points are different components so a mid point
+// of a spline can have both
+#[derive(Component)]
+struct BezierStartPoint(Entity);
+#[derive(Component)]
+struct BezierEndPoint(Entity);
+
 #[derive(Component, Clone)]
 struct BezierCurve {
     pub start_point: Entity,
@@ -89,7 +100,7 @@ struct BezierCurve {
     pub end_handle: Entity,
     pub end_point: Entity,
 
-    pub curve: Entity,
+    pub curve_primitives: Entity,
 }
 
 #[derive(Bundle)]
@@ -132,43 +143,59 @@ fn create_endpoint<'c>(
 }
 
 fn initialize_bezier_curve(mut commands: Commands) {
-    let start_handle_1 = create_handle(&mut commands, 400.0, 456.0).id();
-    let end_handle_1 = create_handle(&mut commands, 400.0, 24.0).id();
-    let start_handle_2 = create_handle(&mut commands, 800.0, 456.0).id();
-    let end_handle_2 = create_handle(&mut commands, 800.0, 24.0).id();
+    let curve_1 = commands.spawn_empty().id();
+    let curve_2 = commands.spawn_empty().id();
 
-    let start_point_1 = create_endpoint(&mut commands, 200.0, 240.0, &[start_handle_1]).id();
-    let end_point_1 =
-        create_endpoint(&mut commands, 600.0, 240.0, &[end_handle_1, start_handle_2]).id();
+    let start_handle_1 = create_handle(&mut commands, 400.0, 456.0)
+        .insert(BezierHandle(curve_1))
+        .id();
+    let end_handle_1 = create_handle(&mut commands, 400.0, 24.0)
+        .insert(BezierHandle(curve_1))
+        .id();
+    let start_handle_2 = create_handle(&mut commands, 800.0, 456.0)
+        .insert(BezierHandle(curve_2))
+        .id();
+    let end_handle_2 = create_handle(&mut commands, 800.0, 24.0)
+        .insert(BezierHandle(curve_2))
+        .id();
+
+    let start_point_1 = create_endpoint(&mut commands, 200.0, 240.0, &[start_handle_1])
+        .insert(BezierStartPoint(curve_1))
+        .id();
+    let end_point_1 = create_endpoint(&mut commands, 600.0, 240.0, &[end_handle_1, start_handle_2])
+        .insert((BezierEndPoint(curve_1), BezierStartPoint(curve_2)))
+        .id();
 
     let start_point_2 = end_point_1;
-    let end_point_2 = create_endpoint(&mut commands, 1000.0, 240.0, &[end_handle_2]).id();
+    let end_point_2 = create_endpoint(&mut commands, 1000.0, 240.0, &[end_handle_2])
+        .insert(BezierEndPoint(curve_2))
+        .id();
 
-    let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
-    let curve = commands.spawn(curve).id();
+    let curve_primitives = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
+    let curve_primitives = commands.spawn(curve_primitives).id();
 
     let bezier_curve = BezierCurve {
         start_point: start_point_1,
         start_handle: start_handle_1,
         end_handle: end_handle_1,
         end_point: end_point_1,
-        curve,
+        curve_primitives,
     };
 
-    commands.spawn(bezier_curve);
+    commands.entity(curve_1).insert(bezier_curve);
 
-    let curve = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
-    let curve = commands.spawn(curve).id();
+    let curve_primitives = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
+    let curve_primitives = commands.spawn(curve_primitives).id();
 
     let bezier_curve = BezierCurve {
         start_point: start_point_2,
         start_handle: start_handle_2,
         end_handle: end_handle_2,
         end_point: end_point_2,
-        curve,
+        curve_primitives,
     };
 
-    commands.spawn(bezier_curve);
+    commands.entity(curve_2).insert(bezier_curve);
 }
 
 #[derive(Default)]
@@ -247,7 +274,9 @@ fn update_bezier_curve(
         return;
     }
 
-    let mut curve = primitives_query.get_mut(bezier_curve.curve).unwrap();
+    let mut curve = primitives_query
+        .get_mut(bezier_curve.curve_primitives)
+        .unwrap();
 
     let curve_points = generate_bezier_points(&control_points.0);
     curve.set_positions(curve_points);
