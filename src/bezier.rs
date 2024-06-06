@@ -124,52 +124,88 @@ impl BaseControlPointBundle {
     }
 }
 
-fn create_handle<'c>(commands: &'c mut Commands, x: f32, y: f32) -> EntityCommands<'c> {
-    commands.spawn((BaseControlPointBundle::new(x, y), Hidden))
+fn create_handle<'c>(
+    commands: &'c mut Commands,
+    x: f32,
+    y: f32,
+    curve: Entity,
+) -> EntityCommands<'c> {
+    commands.spawn((
+        BaseControlPointBundle::new(x, y),
+        Hidden,
+        BezierHandle(curve),
+    ))
 }
 
-fn create_endpoint<'c>(
+fn create_terminal_point<'c>(
     commands: &'c mut Commands,
     x: f32,
     y: f32,
     connections: &[Entity],
+    // Set this to the curve that this terminal is
+    // the end point for
+    end_point_curve: Option<Entity>,
+    // Set this to the curve that this terminal is
+    // the start point for
+    start_point_curve: Option<Entity>,
 ) -> EntityCommands<'c> {
-    commands.spawn((
+    let mut commands = commands.spawn((
         BaseControlPointBundle::new(x, y),
         Selectable,
         SolidWhenSelected,
         Connection(Vec::from(connections)),
-    ))
+    ));
+
+    if let Some(entity) = end_point_curve {
+        commands.insert(BezierEndPoint(entity));
+    };
+
+    if let Some(entity) = start_point_curve {
+        commands.insert(BezierStartPoint(entity));
+    };
+
+    commands
 }
 
 fn initialize_bezier_curve(mut commands: Commands) {
     let curve_1 = commands.spawn_empty().id();
     let curve_2 = commands.spawn_empty().id();
 
-    let start_handle_1 = create_handle(&mut commands, 400.0, 456.0)
-        .insert(BezierHandle(curve_1))
-        .id();
-    let end_handle_1 = create_handle(&mut commands, 400.0, 24.0)
-        .insert(BezierHandle(curve_1))
-        .id();
-    let start_handle_2 = create_handle(&mut commands, 800.0, 456.0)
-        .insert(BezierHandle(curve_2))
-        .id();
-    let end_handle_2 = create_handle(&mut commands, 800.0, 24.0)
-        .insert(BezierHandle(curve_2))
-        .id();
+    let start_handle_1 = create_handle(&mut commands, 400.0, 456.0, curve_1).id();
+    let end_handle_1 = create_handle(&mut commands, 400.0, 24.0, curve_1).id();
+    let start_handle_2 = create_handle(&mut commands, 800.0, 456.0, curve_2).id();
+    let end_handle_2 = create_handle(&mut commands, 800.0, 24.0, curve_2).id();
 
-    let start_point_1 = create_endpoint(&mut commands, 200.0, 240.0, &[start_handle_1])
-        .insert(BezierStartPoint(curve_1))
-        .id();
-    let end_point_1 = create_endpoint(&mut commands, 600.0, 240.0, &[end_handle_1, start_handle_2])
-        .insert((BezierEndPoint(curve_1), BezierStartPoint(curve_2)))
-        .id();
+    let start_point_1 = create_terminal_point(
+        &mut commands,
+        200.0,
+        240.0,
+        &[start_handle_1],
+        None,
+        Some(curve_1),
+    )
+    .id();
+
+    let end_point_1 = create_terminal_point(
+        &mut commands,
+        600.0,
+        240.0,
+        &[end_handle_1, start_handle_2],
+        Some(curve_1),
+        Some(curve_2),
+    )
+    .id();
 
     let start_point_2 = end_point_1;
-    let end_point_2 = create_endpoint(&mut commands, 1000.0, 240.0, &[end_handle_2])
-        .insert(BezierEndPoint(curve_2))
-        .id();
+    let end_point_2 = create_terminal_point(
+        &mut commands,
+        1000.0,
+        240.0,
+        &[end_handle_2],
+        Some(curve_2),
+        None,
+    )
+    .id();
 
     let curve_primitives = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
     let curve_primitives = commands.spawn(curve_primitives).id();
