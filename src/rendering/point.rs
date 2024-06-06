@@ -26,7 +26,6 @@ pub struct RenderData {
     pub outline: bool,
 }
 
-// Move this back over to point.rs after the refactor is complete
 #[derive(Component)]
 pub struct Point {
     pub size: f32,
@@ -37,9 +36,9 @@ pub(super) struct PointsData {
     buffer: Vec<RenderData>,
 }
 
-/// Note this probably limits parallelizability by having a
-/// Mutable reference here especially if multiple systems
-/// need to draw points
+// NOTE: this probably limits parallelizability by having a
+// Mutable reference here especially if multiple systems
+// need to draw points
 #[derive(SystemParam)]
 pub struct Points<'w> {
     data: ResMut<'w, PointsData>,
@@ -152,8 +151,6 @@ impl<'draw> Renderer<'draw> {
         }
     }
 
-    // Maybe make this public eventually since it could end up being more efficient to use this
-    // than render single point
     pub fn draw_points<'a, It>(&self, render_params: &mut RenderParams, data: It)
     where
         It: IntoIterator<Item = RenderData>,

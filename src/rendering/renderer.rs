@@ -79,7 +79,6 @@ fn initialize_renderer(world: &mut World) {
 
     let event_loop = world.non_send_resource::<winit::event_loop::EventLoop<RequestRedraw>>();
 
-    // First we start by opening a new Window
     let display_builder = glutin_winit::DisplayBuilder::new();
     let config_template_builder = glutin::config::ConfigTemplateBuilder::new();
     let (_, gl_config) = display_builder
@@ -156,7 +155,7 @@ impl Plugin for RenderingPlugin {
         app.add_systems(bevy::app::Last, render_system);
     }
 
-    // This needs to happen in finish so that we can use the eventloop created in
+    // [initialize_renderer] needs to happen in finish so that we can use the eventloop created in
     // the in the winit plugin
     fn finish(&self, app: &mut bevy::prelude::App) {
         initialize_renderer(&mut app.world);

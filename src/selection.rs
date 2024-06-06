@@ -76,28 +76,23 @@ fn mouse_moved(
     mut cursor_evr: EventReader<CursorMoved>,
     mut mouse_position_previous: Local<Position>,
 ) {
+    // Only update when there are new mouse events
     let new_mouse_position = cursor_evr.read().last();
-    // If there has been no change in mouse position since last frame
-    // We shouldn't waste time calculating differences
     let Some(mouse_position) = new_mouse_position else {
         return;
     };
     let mouse_position = Position::from([mouse_position.position.x, mouse_position.position.y]);
 
-    // Only look for things to hover if we don't have a selection
+    // if we are holding items handle hover logic
     if held.held_items.is_empty() {
         let hover_query = queries.p0();
         for (entity, position, hoverable, hovered, connection) in hover_query.iter() {
             let distance_squared = position.distance_squared(&mouse_position);
             let radius_squared = hoverable.radius.powi(2);
 
-            // If we are in range the commponent under the
-            // mouse is now hovered, otherwise if the component
-            // is hovered it should no longer be hovered
             if distance_squared < radius_squared {
                 commands.entity(entity).insert(Hovered::default());
 
-                // If there is a connected entity also set hovered on that element as well
                 if let Some(Connection(other)) = connection {
                     for other in other {
                         commands.entity(*other).insert(Hovered { connected: true });
@@ -105,7 +100,8 @@ fn mouse_moved(
                 }
             } else if let Some(Hovered { connected }) = hovered {
                 // Connected hovers should be taken care of when
-                // the host entity loses hover
+                // the host entity loses hover rather than handling
+                // it on their own
                 if *connected {
                     continue;
                 }
@@ -119,13 +115,14 @@ fn mouse_moved(
                 }
             }
         }
-    // Otherwise we want to move the selection
+    // otherwise handle moving held items
     } else {
         let mut drag_query = queries.p1();
         let difference = mouse_position - *mouse_position_previous;
         for entity in &held.held_items {
             // The saved entity could have been removed
             // in between selection and mouse_moved
+            // so we can't just unwrap
             if let Ok(mut position) = drag_query.get_mut(*entity) {
                 *position = *position + difference;
             }
@@ -145,7 +142,6 @@ fn grab_selection(
     )>,
 ) {
     if mouse_buttons.just_pressed(MouseButton::Left) {
-        // Put all items that are being hovered into the selection
         selection.held_items.extend(selection_queries.p0().iter());
 
         let old_entity = selection.selected_item;
@@ -154,26 +150,19 @@ fn grab_selection(
         let different_entity = matches!((old_entity, new_entity), (Some(a), Some(b)) if a != b);
         let not_dragging = selection.held_items.is_empty();
 
-        // Right now selection behavior only depends on just clicked,
+        // Right now selection behavior only depends on just pressed,
         // maybe this should be extended to handle the whole click instead
-        // We also should only continue doing checks if the item actually changed
-        // If there is currently a selected item then remove the
-        // selected component from that item
         if let Some(entity) = old_entity {
-            // Only deselect if we aren't currently dragging
-            // Or we are selecting a new item
             if different_entity || not_dragging {
                 commands.entity(entity).remove::<Selected>();
             }
         }
 
-        // If we selected a new item add the selected component to that element
         if let Some(entity) = new_entity {
             commands.entity(entity).insert(Selected);
             selection.selected_item = new_entity;
         }
     } else if mouse_buttons.just_released(MouseButton::Left) {
-        // Clear all selection if the mouse is let go
         selection.held_items.clear();
     }
 }

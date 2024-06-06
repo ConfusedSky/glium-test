@@ -147,9 +147,7 @@ impl Renderer {
                 || self.buffers.len() <= data.id
                 || self.buffers[data.id].is_none()
             {
-                // If the vector is not large enough to contain the new buffer then we resize based on
-                // the largeset id we have available
-                // Note: with this solution if we create and delete primitive data objects enough
+                // NOTE: with this solution if we create and delete primitive data objects enough
                 // we will be running into a sort of memory leak where the id keeps going up but old
                 // id's are never reused so going forward this may not be the best solution
                 if self.buffers.len() <= data.id {

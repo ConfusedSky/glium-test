@@ -24,7 +24,7 @@ use crate::{
 };
 
 /// Calculates a point t along a bezier curve
-/// t must be 0 <= t < 1
+/// t must be 0 <= t <= 1
 fn bezier(
     start_point: Position,
     start_handle: Position,
@@ -247,7 +247,6 @@ fn update_bezier_curve(
     system: &Res<crate::my_time::Time>,
     control_points: &mut Local<ControlPoints>,
 ) {
-    // Look at each point if any of them have a position that has changed
     let control_points_query = positions_query.iter_many([
         bezier_curve.start_point,
         bezier_curve.start_handle,
@@ -255,13 +254,13 @@ fn update_bezier_curve(
         bezier_curve.end_point,
     ]);
 
-    let mut has_change = false;
+    let mut control_points_changed = false;
     let mut start_selected = false;
     let mut end_selected = false;
 
     for (i, (point, selected)) in control_points_query.enumerate() {
         if point.is_changed() {
-            has_change = true;
+            control_points_changed = true;
         }
 
         // Clone here because many below processes can only take
@@ -279,7 +278,7 @@ fn update_bezier_curve(
             end_selected = true;
         }
     }
-    // We always want to update the curve follower
+
     let elapsed = system.elapsed / 4.0;
     let point_iterator =
         generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
@@ -287,9 +286,8 @@ fn update_bezier_curve(
         points.draw_point(point, 10.0, Color::RED);
     }
 
-    // Only draw the start/end handle if that point is selected
-    // And (un)hide handles associated with the selected point
     if start_selected {
+        // Draw start handle line
         lines.draw_line(control_points.0[0], control_points.0[1]);
         commands
             .entity(bezier_curve.start_handle)
@@ -299,23 +297,21 @@ fn update_bezier_curve(
     }
 
     if end_selected {
+        // Draw end handle line
         lines.draw_line(control_points.0[2], control_points.0[3]);
         commands.entity(bezier_curve.end_handle).remove::<Hidden>();
     } else {
         commands.entity(bezier_curve.end_handle).insert(Hidden);
     }
 
-    // If any of the curve points have been changed we need to update the curve parts
-    if !has_change {
-        return;
+    if control_points_changed {
+        let mut curve = primitives_query
+            .get_mut(bezier_curve.curve_primitives)
+            .unwrap();
+
+        let curve_points = generate_bezier_points(&control_points.0);
+        curve.set_positions(curve_points);
     }
-
-    let mut curve = primitives_query
-        .get_mut(bezier_curve.curve_primitives)
-        .unwrap();
-
-    let curve_points = generate_bezier_points(&control_points.0);
-    curve.set_positions(curve_points);
 }
 
 fn update_bezier_curve_system(
@@ -345,8 +341,6 @@ fn update_bezier_curve_system(
 #[derive(Component)]
 struct SolidWhenSelected;
 
-// For every component that was selected this frame, if it has a stroke component and has the solid when selected
-// marker set the stroke to solid
 fn solid_when_selected_system(
     mut stroke_query: Query<&mut Stroke, With<SolidWhenSelected>>,
     selected_added: Query<Entity, Added<Selected>>,
