@@ -56,7 +56,7 @@ fn generate_bezier_points_with_offset(
 ) -> impl Iterator<Item = Position> {
     let offset = offset.unwrap_or_default();
     let subdivisions = subdivisions.unwrap_or(60);
-    let mut shape_points = Vec::with_capacity(subdivisions);
+    let mut shape_points = Vec::with_capacity(subdivisions + if include_end_point { 1 } else { 0 });
 
     for i in 0..subdivisions {
         let t = if offset > 0.0 {
@@ -280,29 +280,30 @@ fn update_bezier_curve(
         }
     }
 
-    let elapsed = system.elapsed / 4.0;
+    let offset = system.elapsed / 4.0;
     let point_iterator =
-        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed), false);
+        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(offset), false);
     for point in point_iterator {
         points.draw_point(point, 10.0, Color::RED);
     }
 
+    let [start_point_position, start_handle_position, end_handle_position, end_point_position] =
+        control_points.0;
+
+    let mut start_handle = commands.entity(bezier_curve.start_handle);
     if start_selected {
-        // Draw start handle line
-        lines.draw_line(control_points.0[0], control_points.0[1]);
-        commands
-            .entity(bezier_curve.start_handle)
-            .remove::<Hidden>();
+        lines.draw_line(start_point_position, start_handle_position);
+        start_handle.remove::<Hidden>();
     } else {
-        commands.entity(bezier_curve.start_handle).insert(Hidden);
+        start_handle.insert(Hidden);
     }
 
+    let mut end_handle = commands.entity(bezier_curve.end_handle);
     if end_selected {
-        // Draw end handle line
-        lines.draw_line(control_points.0[2], control_points.0[3]);
-        commands.entity(bezier_curve.end_handle).remove::<Hidden>();
+        lines.draw_line(end_point_position, end_handle_position);
+        end_handle.remove::<Hidden>();
     } else {
-        commands.entity(bezier_curve.end_handle).insert(Hidden);
+        end_handle.insert(Hidden);
     }
 
     if control_points_changed {
