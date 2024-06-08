@@ -45,23 +45,20 @@ fn bezier(
 }
 
 fn generate_bezier_points(control_points: &[Position; 4]) -> impl Iterator<Item = Position> {
-    generate_bezier_points_with_offset(control_points, None, None)
+    generate_bezier_points_with_offset(control_points, None, None, true)
 }
 
 fn generate_bezier_points_with_offset(
     control_points: &[Position; 4],
     subdivisions: Option<usize>,
     offset: Option<f64>,
+    include_end_point: bool,
 ) -> impl Iterator<Item = Position> {
     let offset = offset.unwrap_or_default();
     let subdivisions = subdivisions.unwrap_or(60);
     let mut shape_points = Vec::with_capacity(subdivisions);
 
-    // Add one to the subdivisions if there is no offset so
-    // if perfectly fills the space
-    // if you add one to the subdivisions and there is
-    // an offset there will be overlapping points
-    for i in 0..subdivisions + if offset <= 0.1 { 1 } else { 0 } {
+    for i in 0..subdivisions {
         let t = if offset > 0.0 {
             let t = i as f64 / subdivisions as f64 + offset;
             t.fract()
@@ -77,6 +74,10 @@ fn generate_bezier_points_with_offset(
             t,
         );
         shape_points.push(point);
+    }
+
+    if include_end_point {
+        shape_points.push(control_points[3]);
     }
 
     shape_points.into_iter()
@@ -281,7 +282,7 @@ fn update_bezier_curve(
 
     let elapsed = system.elapsed / 4.0;
     let point_iterator =
-        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed));
+        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(elapsed), false);
     for point in point_iterator {
         points.draw_point(point, 10.0, Color::RED);
     }
