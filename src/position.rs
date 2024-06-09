@@ -38,9 +38,9 @@ impl PartialEq for Position {
     // floating point numbers
     fn eq(&self, other: &Self) -> bool {
         const DELTA: f32 = 0.0001;
-        let distance = *self - *other;
+        let distance = self.distance_squared(other);
 
-        distance.x() < DELTA && distance.y() < DELTA
+        distance < DELTA
     }
 }
 

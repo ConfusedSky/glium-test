@@ -24,7 +24,9 @@ use crate::{
 };
 
 /// Calculates a point t along a bezier curve
-/// t must be 0 <= t <= 1
+///
+/// # Panics
+/// panics if 0 <= t <= 1 is not true
 fn bezier(
     start_point: Position,
     start_handle: Position,
@@ -48,6 +50,8 @@ fn generate_bezier_points(control_points: &[Position; 4]) -> impl Iterator<Item 
     generate_bezier_points_with_offset(control_points, None, None, true)
 }
 
+/// # Panics
+/// Panics if subdivisions is 0
 fn generate_bezier_points_with_offset(
     control_points: &[Position; 4],
     subdivisions: Option<usize>,
@@ -57,6 +61,8 @@ fn generate_bezier_points_with_offset(
     let offset = offset.unwrap_or_default();
     let subdivisions = subdivisions.unwrap_or(60);
     let mut shape_points = Vec::with_capacity(subdivisions + if include_end_point { 1 } else { 0 });
+
+    assert_ne!(subdivisions, 0, "Subdivisions must be a positive integer");
 
     for i in 0..subdivisions {
         let t = if offset > 0.0 {
@@ -83,15 +89,43 @@ fn generate_bezier_points_with_offset(
     shape_points.into_iter()
 }
 
+// Implements De casteljaus algorithm to split a bezier
+// curve into two bezier curves
+fn split_bezier(
+    start_point: Position,
+    start_handle: Position,
+    end_handle: Position,
+    end_point: Position,
+    t: f32,
+) -> ([Position; 4], [Position; 4]) {
+    let c1_start_point = start_point;
+    let c1_start_handle = (start_point + start_handle) * t;
+    let c2_end_handle = (end_handle + end_point) * t;
+    let temp = (start_handle + end_handle) * t;
+    let c1_end_handle = (c1_start_handle + temp) * t;
+    let c2_start_handle = (temp + c2_end_handle) * t;
+    let c1_end_point = (c1_end_handle + c2_start_handle) * t;
+    let c2_start_point = c1_end_point;
+    let c2_end_point = end_point;
+
+    (
+        [c1_start_point, c1_start_handle, c1_end_handle, c1_end_point],
+        [c2_start_point, c2_start_handle, c2_end_handle, c2_end_point],
+    )
+}
+
 // Components that exist for reverse lookup of a curve from a point
 #[derive(Component)]
+#[allow(dead_code)]
 struct BezierHandle(Entity);
 
 // Start and end points are different components so a mid point
 // of a spline can have both
 #[derive(Component)]
+#[allow(dead_code)]
 struct BezierStartPoint(Entity);
 #[derive(Component)]
+#[allow(dead_code)]
 struct BezierEndPoint(Entity);
 
 #[derive(Component, Clone)]
@@ -114,9 +148,9 @@ struct BaseControlPointBundle {
 }
 
 impl BaseControlPointBundle {
-    fn new(x: f32, y: f32) -> Self {
+    fn new(position: Position) -> Self {
         Self {
-            position: Position::new(x, y),
+            position,
             point: Point { size: 15.0 },
             hoverable: Hoverable { radius: 20.0 },
             draggable: Draggable,
@@ -127,12 +161,11 @@ impl BaseControlPointBundle {
 
 fn create_handle<'c>(
     commands: &'c mut Commands,
-    x: f32,
-    y: f32,
+    position: Position,
     curve: Entity,
 ) -> EntityCommands<'c> {
     commands.spawn((
-        BaseControlPointBundle::new(x, y),
+        BaseControlPointBundle::new(position),
         Hidden,
         BezierHandle(curve),
     ))
@@ -140,8 +173,7 @@ fn create_handle<'c>(
 
 fn create_terminal_point<'c>(
     commands: &'c mut Commands,
-    x: f32,
-    y: f32,
+    position: Position,
     connections: &[Entity],
     // Set this to the curve that this terminal is
     // the end point for
@@ -151,7 +183,7 @@ fn create_terminal_point<'c>(
     start_point_curve: Option<Entity>,
 ) -> EntityCommands<'c> {
     let mut commands = commands.spawn((
-        BaseControlPointBundle::new(x, y),
+        BaseControlPointBundle::new(position),
         Selectable,
         SolidWhenSelected,
         Connection(Vec::from(connections)),
@@ -168,45 +200,29 @@ fn create_terminal_point<'c>(
     commands
 }
 
-fn initialize_bezier_curve(mut commands: Commands) {
+fn create_bezier_curve(
+    commands: &mut Commands,
+    start_point: Position,
+    start_handle: Position,
+    end_handle: Position,
+    end_point: Position,
+) {
     let curve_1 = commands.spawn_empty().id();
-    let curve_2 = commands.spawn_empty().id();
 
-    let start_handle_1 = create_handle(&mut commands, 400.0, 456.0, curve_1).id();
-    let end_handle_1 = create_handle(&mut commands, 400.0, 24.0, curve_1).id();
-    let start_handle_2 = create_handle(&mut commands, 800.0, 456.0, curve_2).id();
-    let end_handle_2 = create_handle(&mut commands, 800.0, 24.0, curve_2).id();
+    let start_handle_1 = create_handle(commands, start_handle, curve_1).id();
+    let end_handle_1 = create_handle(commands, end_handle, curve_1).id();
 
     let start_point_1 = create_terminal_point(
-        &mut commands,
-        200.0,
-        240.0,
+        commands,
+        start_point,
         &[start_handle_1],
         None,
         Some(curve_1),
     )
     .id();
 
-    let end_point_1 = create_terminal_point(
-        &mut commands,
-        600.0,
-        240.0,
-        &[end_handle_1, start_handle_2],
-        Some(curve_1),
-        Some(curve_2),
-    )
-    .id();
-
-    let start_point_2 = end_point_1;
-    let end_point_2 = create_terminal_point(
-        &mut commands,
-        1000.0,
-        240.0,
-        &[end_handle_2],
-        Some(curve_2),
-        None,
-    )
-    .id();
+    let end_point_1 =
+        create_terminal_point(commands, end_point, &[end_handle_1], Some(curve_1), None).id();
 
     let curve_primitives = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
     let curve_primitives = commands.spawn(curve_primitives).id();
@@ -220,19 +236,46 @@ fn initialize_bezier_curve(mut commands: Commands) {
     };
 
     commands.entity(curve_1).insert(bezier_curve);
+}
 
-    let curve_primitives = primitives::Primatives::new(&[], primitives::Type::LineStrip, 2.0);
-    let curve_primitives = commands.spawn(curve_primitives).id();
+fn initialize_bezier_curve(mut commands: Commands) {
+    let offset = Position::new(0.0, 100.0);
+    let start_point = Position::new(200.0, 240.0);
+    let start_handle = Position::new(400.0, 456.0);
+    let end_handle = Position::new(400.0, 24.0);
+    let end_point = Position::new(600.0, 240.0);
 
-    let bezier_curve = BezierCurve {
-        start_point: start_point_2,
-        start_handle: start_handle_2,
-        end_handle: end_handle_2,
-        end_point: end_point_2,
-        curve_primitives,
-    };
-
-    commands.entity(curve_2).insert(bezier_curve);
+    create_bezier_curve(
+        &mut commands,
+        start_point,
+        start_handle,
+        end_handle,
+        end_point,
+    );
+    let (
+        [start_point, start_handle, end_handle, end_point],
+        [start_point_2, start_handle_2, end_handle_2, end_point_2],
+    ) = split_bezier(
+        start_point + offset,
+        start_handle + offset,
+        end_handle + offset,
+        end_point + offset,
+        0.5,
+    );
+    create_bezier_curve(
+        &mut commands,
+        start_point,
+        start_handle,
+        end_handle,
+        end_point,
+    );
+    create_bezier_curve(
+        &mut commands,
+        start_point_2,
+        start_handle_2,
+        end_handle_2,
+        end_point_2,
+    );
 }
 
 #[derive(Default)]
@@ -280,11 +323,13 @@ fn update_bezier_curve(
         }
     }
 
-    let offset = system.elapsed / 4.0;
-    let point_iterator =
-        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(offset), false);
-    for point in point_iterator {
-        points.draw_point(point, 10.0, Color::RED);
+    if false {
+        let offset = system.elapsed / 4.0;
+        let point_iterator =
+            generate_bezier_points_with_offset(&control_points.0, Some(10), Some(offset), false);
+        for point in point_iterator {
+            points.draw_point(point, 10.0, Color::RED);
+        }
     }
 
     let [start_point_position, start_handle_position, end_handle_position, end_point_position] =
@@ -377,49 +422,67 @@ impl Plugin for BezierPlugin {
 mod tests {
     use super::*;
 
-    #[test]
-    fn make_sure_two_curves_can_have_the_same_points_as_one() {
-        let start = Position::new(100.0, 100.0);
+    fn test_split(t: f32, point_count: usize, curve_1_points: usize) {
+        let start_point = Position::new(100.0, 100.0);
         let start_handle = Position::new(150.0, 100.0);
         let end_handle = Position::new(150.0, -100.0);
-        let end = Position::new(100.0, -100.0);
+        let end_point = Position::new(100.0, -100.0);
 
         let single_curve = generate_bezier_points_with_offset(
-            &[start, start_handle, end_handle, end],
-            Some(20),
+            &[start_point, start_handle, end_handle, end_point],
+            Some(point_count),
             None,
             false,
         );
 
-        let t = 0.5;
-        // Generate two new curves [A, B], [B, C] from a curve [A, C] where B is the point that is
-        // t(%) along the the original curve
-        // The two bezier curves are: start,c1_start_handle,c1_end_handle,c1_end and c1_end,c2_start_handle,c2_end_handle,end.
-        let c1_start_handle = (start + start_handle) * t;
-        let c2_end_handle = (end_handle + end) * t;
-        let temp = (start_handle + end_handle) * t;
-        let c1_end_handle = (c1_start_handle + temp) * t;
-        let c2_start_handle = (temp + c2_end_handle) * t;
-        let c1_end = (c1_end_handle + c2_start_handle) * t;
+        let (curve_1, curve_2) = split_bezier(start_point, start_handle, end_handle, end_point, t);
 
-        let c1 = generate_bezier_points_with_offset(
-            &[start, c1_start_handle, c1_end_handle, c1_end],
-            Some(10),
+        let curve_1 =
+            generate_bezier_points_with_offset(&curve_1, Some(curve_1_points), None, false);
+
+        let curve_2 = generate_bezier_points_with_offset(
+            &curve_2,
+            Some(point_count - curve_1_points),
             None,
             false,
         );
 
-        let c2 = generate_bezier_points_with_offset(
-            &[c1_end, c2_start_handle, c2_end_handle, end],
-            Some(10),
-            None,
-            false,
-        );
+        let final_points = curve_1.chain(curve_2);
+        let zipped_points = single_curve.zip(final_points);
 
-        let final_points = c1.chain(c2);
-
-        for (p1, p2) in single_curve.zip(final_points) {
-            assert_eq!(p1, p2);
+        for (i, (p1, p2)) in zipped_points.enumerate() {
+            println!("{p1:?}, {p2:?} ");
+            assert_eq!(
+                p1, p2,
+                "Failed at t={t}, point_count={point_count}, curve_1_points={curve_1_points}, point_index={i}"
+            );
         }
+        println!("====");
+    }
+
+    #[test]
+    fn split_bezier_simple() {
+        test_split(0.5, 20, 10);
+    }
+
+    #[test]
+    fn split_bezier_single() {
+        test_split(0.5, 2, 1);
+    }
+
+    #[test]
+    fn split_bezier_many() {
+        test_split(0.5, 20000, 10000);
+    }
+
+    #[test]
+    fn split_bezier_all_t() {
+        // let subdivisions = 60;
+        //
+        // for i in 30..subdivisions {
+        //     let t = i as f32 / subdivisions as f32;
+        //     test_split(t, subdivisions, i);
+        // }
+        test_split(0.1, 400, 40);
     }
 }
