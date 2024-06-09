@@ -469,7 +469,6 @@ mod tests {
         let zipped_points = single_curve.zip(final_points);
 
         for (i, (p1, p2)) in zipped_points.enumerate() {
-            println!("{p1:?}, {p2:?} ");
             if p1 != p2 {
                 return Err(SplitError {
                     start_point,
@@ -485,7 +484,6 @@ mod tests {
                 });
             }
         }
-        println!("====");
 
         Ok(())
     }
@@ -507,27 +505,58 @@ mod tests {
     }
 
     #[test]
-    fn split_bezier_simple() {
+    fn split_simple() {
         test_split(0.5, 20).unwrap();
     }
 
     #[test]
-    fn split_bezier_single() {
+    fn split_single() {
         test_split(0.5, 2).unwrap();
     }
 
     #[test]
-    fn split_bezier_many() {
+    fn split_many() {
         test_split(0.5, 20000).unwrap();
     }
 
     #[test]
-    fn split_bezier_all_t() {
+    fn split_all_t() {
         let subdivisions = 60;
 
         for i in 1..subdivisions {
             let t = i as f64 / subdivisions as f64;
             test_split(t, subdivisions).unwrap();
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn split_fuzz() {
+        use rand::prelude::*;
+        for i in 0..10000 {
+            let mut rand = rand::thread_rng();
+            let mut position_rand = || rand.gen_range(-1000.0..1000.0);
+            let start_point = Position::new(position_rand(), position_rand());
+            let start_handle = Position::new(position_rand(), position_rand());
+            let end_handle = Position::new(position_rand(), position_rand());
+            let end_point = Position::new(position_rand(), position_rand());
+
+            let result = test_split_granular(
+                start_point,
+                start_handle,
+                end_handle,
+                end_point,
+                // We want some well behaved values here so we don't fail automatically
+                // due to point size missmatch
+                0.5,
+                rand.gen_range(1..5000) * 2,
+            );
+
+            if let Err(result) = result {
+                eprintln!("Error in iteration {i}: ");
+                eprintln!("{result:#?}");
+                panic!();
+            }
         }
     }
 }
