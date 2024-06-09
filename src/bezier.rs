@@ -418,13 +418,8 @@ mod tests {
 
         let final_points = c1.chain(c2);
 
-        let origin = Position::new(0.0, 0.0);
         for (p1, p2) in single_curve.zip(final_points) {
-            let distance = (p1 - p2).distance_squared(&origin);
-            assert!(
-                distance <= 0.00001,
-                "{distance} is not within the margin of error for {p1:?} and {p2:?}"
-            );
+            assert_eq!(p1, p2);
         }
     }
 }

@@ -4,7 +4,7 @@ use std::ops::Mul;
 use bevy::ecs::component::Component;
 use glium::uniforms::AsUniformValue;
 
-#[derive(Clone, Copy, Component, Default, Debug, PartialEq)]
+#[derive(Clone, Copy, Component, Default, Debug)]
 pub struct Position([f32; 2]);
 
 impl Position {
@@ -30,6 +30,17 @@ impl Position {
         let x = this.x() as f64 * (1. - t) + other.x() as f64 * t;
         let y = this.y() as f64 * (1. - t) + other.y() as f64 * t;
         Self([x as f32, y as f32])
+    }
+}
+
+impl PartialEq for Position {
+    // For partial eq we want the equality to be partially fuzzy because we are dealing with
+    // floating point numbers
+    fn eq(&self, other: &Self) -> bool {
+        const DELTA: f32 = 0.0001;
+        let distance = *self - *other;
+
+        distance.x() < DELTA && distance.y() < DELTA
     }
 }
 
