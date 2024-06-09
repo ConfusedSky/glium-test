@@ -422,6 +422,21 @@ impl Plugin for BezierPlugin {
 mod tests {
     use super::*;
 
+    #[derive(Debug)]
+    #[allow(dead_code)]
+    struct SplitError {
+        t: f64,
+        point_count: usize,
+        curve_1_points: usize,
+        point_index: usize,
+        p1: Position,
+        p2: Position,
+        start_point: Position,
+        start_handle: Position,
+        end_handle: Position,
+        end_point: Position,
+    }
+
     fn test_split_granular(
         start_point: Position,
         start_handle: Position,
@@ -429,7 +444,7 @@ mod tests {
         end_point: Position,
         t: f64,
         point_count: usize,
-    ) {
+    ) -> Result<(), SplitError> {
         let single_curve = generate_bezier_points_with_offset(
             &[start_point, start_handle, end_handle, end_point],
             Some(point_count),
@@ -455,15 +470,27 @@ mod tests {
 
         for (i, (p1, p2)) in zipped_points.enumerate() {
             println!("{p1:?}, {p2:?} ");
-            assert_eq!(
-                p1, p2,
-                "Failed at t={t}, point_count={point_count}, curve_1_points={curve_1_points}, point_index={i}"
-            );
+            if p1 != p2 {
+                return Err(SplitError {
+                    start_point,
+                    start_handle,
+                    end_handle,
+                    end_point,
+                    t,
+                    point_count,
+                    curve_1_points,
+                    point_index: i,
+                    p1,
+                    p2,
+                });
+            }
         }
         println!("====");
+
+        Ok(())
     }
 
-    fn test_split(t: f64, point_count: usize) {
+    fn test_split(t: f64, point_count: usize) -> Result<(), SplitError> {
         let start_point = Position::new(100.0, 100.0);
         let start_handle = Position::new(150.0, 100.0);
         let end_handle = Position::new(150.0, -100.0);
@@ -481,26 +508,26 @@ mod tests {
 
     #[test]
     fn split_bezier_simple() {
-        test_split(0.5, 20);
+        test_split(0.5, 20).unwrap();
     }
 
     #[test]
     fn split_bezier_single() {
-        test_split(0.5, 2);
+        test_split(0.5, 2).unwrap();
     }
 
     #[test]
     fn split_bezier_many() {
-        test_split(0.5, 20000);
+        test_split(0.5, 20000).unwrap();
     }
 
     #[test]
     fn split_bezier_all_t() {
         let subdivisions = 60;
 
-        for i in 30..subdivisions {
+        for i in 1..subdivisions {
             let t = i as f64 / subdivisions as f64;
-            test_split(t, subdivisions);
+            test_split(t, subdivisions).unwrap();
         }
     }
 }
