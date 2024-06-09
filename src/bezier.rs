@@ -372,3 +372,59 @@ impl Plugin for BezierPlugin {
         app.add_systems(PostUpdate, update_bezier_curve_system);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn make_sure_two_curves_can_have_the_same_points_as_one() {
+        let start = Position::new(100.0, 100.0);
+        let start_handle = Position::new(150.0, 100.0);
+        let end_handle = Position::new(150.0, -100.0);
+        let end = Position::new(100.0, -100.0);
+
+        let single_curve = generate_bezier_points_with_offset(
+            &[start, start_handle, end_handle, end],
+            Some(20),
+            None,
+            false,
+        );
+
+        let t = 0.5;
+        // Generate two new curves [A, B], [B, C] from a curve [A, C] where B is the point that is
+        // t(%) along the the original curve
+        // The two bezier curves are: start,c1_start_handle,c1_end_handle,c1_end and c1_end,c2_start_handle,c2_end_handle,end.
+        let c1_start_handle = (start + start_handle) * t;
+        let c2_end_handle = (end_handle + end) * t;
+        let temp = (start_handle + end_handle) * t;
+        let c1_end_handle = (c1_start_handle + temp) * t;
+        let c2_start_handle = (temp + c2_end_handle) * t;
+        let c1_end = (c1_end_handle + c2_start_handle) * t;
+
+        let c1 = generate_bezier_points_with_offset(
+            &[start, c1_start_handle, c1_end_handle, c1_end],
+            Some(10),
+            None,
+            false,
+        );
+
+        let c2 = generate_bezier_points_with_offset(
+            &[c1_end, c2_start_handle, c2_end_handle, end],
+            Some(10),
+            None,
+            false,
+        );
+
+        let final_points = c1.chain(c2);
+
+        let origin = Position::new(0.0, 0.0);
+        for (p1, p2) in single_curve.zip(final_points) {
+            let distance = (p1 - p2).distance_squared(&origin);
+            assert!(
+                distance <= 0.00001,
+                "{distance} is not within the margin of error for {p1:?} and {p2:?}"
+            );
+        }
+    }
+}
