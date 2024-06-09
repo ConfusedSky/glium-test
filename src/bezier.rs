@@ -96,15 +96,15 @@ fn split_bezier(
     start_handle: Position,
     end_handle: Position,
     end_point: Position,
-    t: f32,
+    t: f64,
 ) -> ([Position; 4], [Position; 4]) {
     let c1_start_point = start_point;
-    let c1_start_handle = (start_point + start_handle) * t;
-    let c2_end_handle = (end_handle + end_point) * t;
-    let temp = (start_handle + end_handle) * t;
-    let c1_end_handle = (c1_start_handle + temp) * t;
-    let c2_start_handle = (temp + c2_end_handle) * t;
-    let c1_end_point = (c1_end_handle + c2_start_handle) * t;
+    let c1_start_handle = Position::lerp(start_point, start_handle, t);
+    let c2_end_handle = Position::lerp(end_handle, end_point, t);
+    let temp = Position::lerp(start_handle, end_handle, t);
+    let c1_end_handle = Position::lerp(c1_start_handle, temp, t);
+    let c2_start_handle = Position::lerp(temp, c2_end_handle, t);
+    let c1_end_point = Position::lerp(c1_end_handle, c2_start_handle, t);
     let c2_start_point = c1_end_point;
     let c2_end_point = end_point;
 
@@ -422,7 +422,7 @@ impl Plugin for BezierPlugin {
 mod tests {
     use super::*;
 
-    fn test_split(t: f32, point_count: usize, curve_1_points: usize) {
+    fn test_split(t: f64, point_count: usize, curve_1_points: usize) {
         let start_point = Position::new(100.0, 100.0);
         let start_handle = Position::new(150.0, 100.0);
         let end_handle = Position::new(150.0, -100.0);
@@ -477,12 +477,11 @@ mod tests {
 
     #[test]
     fn split_bezier_all_t() {
-        // let subdivisions = 60;
-        //
-        // for i in 30..subdivisions {
-        //     let t = i as f32 / subdivisions as f32;
-        //     test_split(t, subdivisions, i);
-        // }
-        test_split(0.1, 400, 40);
+        let subdivisions = 60;
+
+        for i in 30..subdivisions {
+            let t = i as f64 / subdivisions as f64;
+            test_split(t, subdivisions, i);
+        }
     }
 }
