@@ -260,7 +260,7 @@ fn initialize_bezier_curve(mut commands: Commands) {
         start_handle + offset,
         end_handle + offset,
         end_point + offset,
-        0.5,
+        0.3,
     );
     create_bezier_curve(
         &mut commands,
@@ -323,13 +323,13 @@ fn update_bezier_curve(
         }
     }
 
-    if false {
-        let offset = system.elapsed / 4.0;
-        let point_iterator =
-            generate_bezier_points_with_offset(&control_points.0, Some(10), Some(offset), false);
-        for point in point_iterator {
-            points.draw_point(point, 10.0, Color::RED);
-        }
+    // TODO: Modify this to always have a constant speed and distance between points instead of
+    // what it currently does
+    let offset = system.elapsed / 4.0;
+    let point_iterator =
+        generate_bezier_points_with_offset(&control_points.0, Some(10), Some(offset), false);
+    for point in point_iterator {
+        points.draw_point(point, 10.0, Color::RED);
     }
 
     let [start_point_position, start_handle_position, end_handle_position, end_point_position] =
@@ -422,12 +422,14 @@ impl Plugin for BezierPlugin {
 mod tests {
     use super::*;
 
-    fn test_split(t: f64, point_count: usize, curve_1_points: usize) {
-        let start_point = Position::new(100.0, 100.0);
-        let start_handle = Position::new(150.0, 100.0);
-        let end_handle = Position::new(150.0, -100.0);
-        let end_point = Position::new(100.0, -100.0);
-
+    fn test_split_granular(
+        start_point: Position,
+        start_handle: Position,
+        end_handle: Position,
+        end_point: Position,
+        t: f64,
+        point_count: usize,
+    ) {
         let single_curve = generate_bezier_points_with_offset(
             &[start_point, start_handle, end_handle, end_point],
             Some(point_count),
@@ -436,6 +438,7 @@ mod tests {
         );
 
         let (curve_1, curve_2) = split_bezier(start_point, start_handle, end_handle, end_point, t);
+        let curve_1_points = (point_count as f64 * t).round() as usize;
 
         let curve_1 =
             generate_bezier_points_with_offset(&curve_1, Some(curve_1_points), None, false);
@@ -460,19 +463,35 @@ mod tests {
         println!("====");
     }
 
+    fn test_split(t: f64, point_count: usize) {
+        let start_point = Position::new(100.0, 100.0);
+        let start_handle = Position::new(150.0, 100.0);
+        let end_handle = Position::new(150.0, -100.0);
+        let end_point = Position::new(100.0, -100.0);
+
+        test_split_granular(
+            start_point,
+            start_handle,
+            end_handle,
+            end_point,
+            t,
+            point_count,
+        )
+    }
+
     #[test]
     fn split_bezier_simple() {
-        test_split(0.5, 20, 10);
+        test_split(0.5, 20);
     }
 
     #[test]
     fn split_bezier_single() {
-        test_split(0.5, 2, 1);
+        test_split(0.5, 2);
     }
 
     #[test]
     fn split_bezier_many() {
-        test_split(0.5, 20000, 10000);
+        test_split(0.5, 20000);
     }
 
     #[test]
@@ -481,7 +500,7 @@ mod tests {
 
         for i in 30..subdivisions {
             let t = i as f64 / subdivisions as f64;
-            test_split(t, subdivisions, i);
+            test_split(t, subdivisions);
         }
     }
 }
