@@ -91,13 +91,9 @@ fn generate_bezier_points_with_offset(
 
 // Implements De casteljaus algorithm to split a bezier
 // curve into two bezier curves
-fn split_bezier(
-    start_point: Position,
-    start_handle: Position,
-    end_handle: Position,
-    end_point: Position,
-    t: f64,
-) -> ([Position; 4], [Position; 4]) {
+fn split_bezier(control_points: &[Position; 4], t: f64) -> ([Position; 4], [Position; 4]) {
+    let [start_point, start_handle, end_handle, end_point] = *control_points;
+
     let c1_start_point = start_point;
     let c1_start_handle = Position::lerp(start_point, start_handle, t);
     let c2_end_handle = Position::lerp(end_handle, end_point, t);
@@ -256,10 +252,12 @@ fn initialize_bezier_curve(mut commands: Commands) {
         [start_point, start_handle, end_handle, end_point],
         [start_point_2, start_handle_2, end_handle_2, end_point_2],
     ) = split_bezier(
-        start_point + offset,
-        start_handle + offset,
-        end_handle + offset,
-        end_point + offset,
+        &[
+            start_point + offset,
+            start_handle + offset,
+            end_handle + offset,
+            end_point + offset,
+        ],
         0.3,
     );
     create_bezier_curve(
@@ -438,21 +436,14 @@ mod tests {
     }
 
     fn test_split_granular(
-        start_point: Position,
-        start_handle: Position,
-        end_handle: Position,
-        end_point: Position,
+        control_points: [Position; 4],
         t: f64,
         point_count: usize,
     ) -> Result<(), SplitError> {
-        let single_curve = generate_bezier_points_with_offset(
-            &[start_point, start_handle, end_handle, end_point],
-            Some(point_count),
-            None,
-            false,
-        );
+        let single_curve =
+            generate_bezier_points_with_offset(&control_points, Some(point_count), None, false);
 
-        let (curve_1, curve_2) = split_bezier(start_point, start_handle, end_handle, end_point, t);
+        let (curve_1, curve_2) = split_bezier(&control_points, t);
         let curve_1_points = (point_count as f64 * t).round() as usize;
 
         let curve_1 =
@@ -471,10 +462,10 @@ mod tests {
         for (i, (p1, p2)) in zipped_points.enumerate() {
             if p1 != p2 {
                 return Err(SplitError {
-                    start_point,
-                    start_handle,
-                    end_handle,
-                    end_point,
+                    start_point: control_points[0],
+                    start_handle: control_points[1],
+                    end_handle: control_points[2],
+                    end_point: control_points[2],
                     t,
                     point_count,
                     curve_1_points,
@@ -495,10 +486,7 @@ mod tests {
         let end_point = Position::new(100.0, -100.0);
 
         test_split_granular(
-            start_point,
-            start_handle,
-            end_handle,
-            end_point,
+            [start_point, start_handle, end_handle, end_point],
             t,
             point_count,
         )
@@ -536,16 +524,10 @@ mod tests {
         for i in 0..10000 {
             let mut rand = rand::thread_rng();
             let mut position_rand = || rand.gen_range(-1000.0..1000.0);
-            let start_point = Position::new(position_rand(), position_rand());
-            let start_handle = Position::new(position_rand(), position_rand());
-            let end_handle = Position::new(position_rand(), position_rand());
-            let end_point = Position::new(position_rand(), position_rand());
+            let points = [Position::new(position_rand(), position_rand()); 4];
 
             let result = test_split_granular(
-                start_point,
-                start_handle,
-                end_handle,
-                end_point,
+                points,
                 // We want some well behaved values here so we don't fail automatically
                 // due to point size missmatch
                 0.5,
