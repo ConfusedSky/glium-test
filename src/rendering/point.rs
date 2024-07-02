@@ -111,8 +111,12 @@ impl<'draw> Renderer<'draw> {
                     0, -2.0 / window_size.y, 1.0,
                     0.0, 0.0, 1.0
                 );
-                vec2 worldPosition = position * point_size + offset;
-                gl_Position = vec4(vec3(worldPosition, 1.0) * worldToView, 1.0);
+                mat3 pointToWorld = mat3(
+                    point_size, 0, offset.x,
+                    0, point_size, offset.y,
+                    0, 0, 1
+                );
+                gl_Position = vec4(vec3(position, 1.0) * pointToWorld * worldToView, 1.0);
                 texcoord = uv;
             }
         "#;
