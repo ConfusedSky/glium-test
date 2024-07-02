@@ -1,4 +1,4 @@
-use std::num::NonZeroU32;
+use std::{num::NonZeroU32, time::Instant};
 
 use bevy::{
     app::Plugin,
@@ -7,7 +7,7 @@ use bevy::{
         system::{Commands, Resource},
         world::World,
     },
-    prelude::{IntoSystemConfigs, Query, Res, ResMut, With},
+    prelude::{FromWorld, IntoSystemConfigs, Local, Query, Res, ResMut, With},
     window::{PrimaryWindow, RequestRedraw, Window, WindowResized},
     winit::WinitWindows,
 };
@@ -157,28 +157,46 @@ fn update_window_size(mut commands: Commands, mut window_resized: EventReader<Wi
     commands.insert_resource(WindowSize(window_size));
 }
 
+struct UpdateCameraPositionData {
+    old_time: Instant,
+}
+
+impl FromWorld for UpdateCameraPositionData {
+    fn from_world(_world: &mut World) -> Self {
+        Self {
+            old_time: Instant::now(),
+        }
+    }
+}
+
 fn update_camera_position(
     q_windows: Query<&Window, With<PrimaryWindow>>,
     mut camera_position: ResMut<CameraPosition>,
     window_size: Res<WindowSize>,
+    mut data: Local<UpdateCameraPositionData>,
 ) {
+    let now = Instant::now();
+    let delta = now.duration_since(data.old_time).as_secs_f32();
+    data.old_time = now;
+
     let Some(new_position) = q_windows.single().cursor_position() else {
         return;
     };
-
     let mouse_position = Position::from([new_position.x, new_position.y]);
     let margin = 50.0;
+    let speed = 150.0;
+    let distance = speed * delta;
 
     if mouse_position.x() < margin {
-        camera_position.0 = camera_position.0 + Position::from([-1.0, 0.0]);
+        camera_position.0 = camera_position.0 + Position::from([-distance, 0.0]);
     } else if mouse_position.x() > window_size.0.x() - margin {
-        camera_position.0 = camera_position.0 + Position::from([1.0, 0.0]);
+        camera_position.0 = camera_position.0 + Position::from([distance, 0.0]);
     }
 
     if mouse_position.y() < margin {
-        camera_position.0 = camera_position.0 + Position::from([0.0, -1.0]);
+        camera_position.0 = camera_position.0 + Position::from([0.0, -distance]);
     } else if mouse_position.y() > window_size.0.y() - margin {
-        camera_position.0 = camera_position.0 + Position::from([0.0, 1.0]);
+        camera_position.0 = camera_position.0 + Position::from([0.0, distance]);
     }
 }
 
