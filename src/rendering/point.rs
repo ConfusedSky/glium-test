@@ -71,19 +71,19 @@ impl<'draw> Renderer<'draw> {
     pub fn new(display: &Display<WindowSurface>) -> Self {
         let points = vec![
             Vertex {
-                position: [-1.0, -1.0],
+                position: [-0.5, -0.5],
                 uv: [0.0, 0.0],
             },
             Vertex {
-                position: [1.0, -1.0],
+                position: [0.5, -0.5],
                 uv: [1.0, 0.0],
             },
             Vertex {
-                position: [-1.0, 1.0],
+                position: [-0.5, 0.5],
                 uv: [0.0, 1.0],
             },
             Vertex {
-                position: [1.0, 1.0],
+                position: [0.5, 0.5],
                 uv: [1.0, 1.0],
             },
         ];
@@ -106,8 +106,13 @@ impl<'draw> Renderer<'draw> {
             varying lowp vec2 texcoord;
 
             void main() {
-                gl_Position = vec4((position * point_size / 2 + offset) * 2 / window_size - 1.0, 0.0, 1.0);
-                gl_Position.y = -gl_Position.y;
+                mat3 worldToView = mat3(
+                    2.0 / window_size.x, 0, -1.0,
+                    0, -2.0 / window_size.y, 1.0,
+                    0.0, 0.0, 1.0
+                );
+                vec2 worldPosition = position * point_size + offset;
+                gl_Position = vec4(vec3(worldPosition, 1.0) * worldToView, 1.0);
                 texcoord = uv;
             }
         "#;
