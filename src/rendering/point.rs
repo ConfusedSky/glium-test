@@ -99,24 +99,19 @@ impl<'draw> Renderer<'draw> {
             in vec2 position;
             in vec2 uv;
 
-            uniform vec2 window_size;
+            uniform mat3 world_to_view;
             uniform float point_size;
             uniform vec2 offset;
 
             varying lowp vec2 texcoord;
 
             void main() {
-                mat3 worldToView = mat3(
-                    2.0 / window_size.x, 0, -1.0,
-                    0, -2.0 / window_size.y, 1.0,
-                    0.0, 0.0, 1.0
-                );
                 mat3 pointToWorld = mat3(
                     point_size, 0, offset.x,
                     0, point_size, offset.y,
                     0, 0, 1
                 );
-                gl_Position = vec4(vec3(position, 1.0) * pointToWorld * worldToView, 1.0);
+                gl_Position = vec4(vec3(position, 1.0) * pointToWorld * world_to_view, 1.0);
                 texcoord = uv;
             }
         "#;
@@ -169,7 +164,7 @@ impl<'draw> Renderer<'draw> {
         for point in data.into_iter() {
             let uniforms = dynamic_uniform! {
                 point_size: &point.size,
-                window_size: render_params.screen_size,
+                world_to_view: render_params.world_to_view,
                 point_color: if point.hovered { &hover_color } else { &point.color } ,
                 offset: &point.position,
                 inner_fill_cutoff: if point.outline { &(0.7 as f32) } else { &(0.0 as f32) },

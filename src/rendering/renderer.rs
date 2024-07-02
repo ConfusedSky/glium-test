@@ -20,12 +20,13 @@ use super::{
     point::{self, PointsData},
     primitives::{self, LinesData},
 };
+use crate::matrix::Mat3;
 use crate::position::Position;
 
 pub struct RenderParams<'a> {
     pub display: &'a Display<WindowSurface>,
     pub target: &'a mut Frame,
-    pub screen_size: &'a Position,
+    pub world_to_view: &'a Mat3,
 }
 
 struct Renderer<'a> {
@@ -35,7 +36,7 @@ struct Renderer<'a> {
 }
 
 #[derive(Resource)]
-pub struct WindowSize(pub Position);
+pub struct WorldToView(pub Mat3);
 
 impl Renderer<'_> {
     pub fn new(display: Display<WindowSurface>) -> Self {
@@ -48,14 +49,14 @@ impl Renderer<'_> {
         }
     }
 
-    pub fn draw(&mut self, world: &mut World, window_size: &Position) {
+    pub fn draw(&mut self, world: &mut World, window_size: &Mat3) {
         let mut target = self.display.draw();
         target.clear_color(0.0, 0.0, 1.0, 1.0);
 
         let mut render_params = RenderParams {
             display: &self.display,
             target: &mut target,
-            screen_size: &window_size,
+            world_to_view: &window_size,
         };
 
         let mut query = world.query::<&mut primitives::Primatives>();
@@ -127,9 +128,9 @@ fn initialize_renderer(world: &mut World) {
 }
 
 fn render_system(world: &mut World) {
-    let window_size = world.resource::<WindowSize>().0.clone();
+    let world_to_view = world.resource::<WorldToView>().0.clone();
     let mut renderer = world.remove_non_send_resource::<Renderer>().unwrap();
-    renderer.draw(world, &window_size);
+    renderer.draw(world, &world_to_view);
     world.insert_non_send_resource(renderer);
 }
 
@@ -142,7 +143,7 @@ fn update_window_size(mut commands: Commands, mut window_resized: EventReader<Wi
     let window_size = Position::from([last_event.width, last_event.height]);
     println!("Window size set to: {:?}", window_size);
 
-    commands.insert_resource(WindowSize(window_size));
+    commands.insert_resource(WorldToView(Mat3::world_to_view(window_size)));
 }
 
 pub struct RenderingPlugin;

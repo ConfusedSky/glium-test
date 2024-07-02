@@ -1,5 +1,6 @@
 mod bezier;
 mod hidden;
+mod matrix;
 mod my_time;
 mod position;
 mod rendering;

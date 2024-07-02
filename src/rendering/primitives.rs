@@ -76,15 +76,10 @@ impl Renderer {
 
             in vec2 position;
 
-            uniform vec2 window_size;
+            uniform mat3 world_to_view;
 
             void main() {
-                mat3 worldToView = mat3(
-                    2.0 / window_size.x, 0, -1.0,
-                    0, -2.0 / window_size.y, 1.0,
-                    0.0, 0.0, 1.0
-                );
-                gl_Position = vec4(vec3(position, 1.0) * worldToView, 1.0);
+                gl_Position = vec4(vec3(position, 1.0) * world_to_view, 1.0);
             }
         "#;
 
@@ -118,7 +113,7 @@ impl Renderer {
         assert!(data.lines_data.len() < MAX_LINES * 2);
 
         let uniforms = dynamic_uniform! {
-            window_size: render_params.screen_size,
+            world_to_view: render_params.world_to_view,
         };
 
         let data: Vec<_> = data.lines_data.drain(..).map(Vertex::from).collect();
@@ -143,7 +138,7 @@ impl Renderer {
 
     pub fn draw(&mut self, render_params: &mut RenderParams, data: &mut Primatives) {
         let uniforms = dynamic_uniform! {
-            window_size: render_params.screen_size,
+            world_to_view: render_params.world_to_view,
         };
 
         let buffer = {
