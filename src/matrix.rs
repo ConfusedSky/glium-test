@@ -13,6 +13,24 @@ impl Mat3 {
             [0.0, 0.0, 1.0],
         ])
     }
+
+    #[allow(dead_code)]
+    pub fn translate(x_offset: f32, y_offset: f32) -> Mat3 {
+        Mat3([[1.0, 0.0, x_offset], [0.0, 1.0, y_offset], [0.0, 0.0, 1.0]])
+    }
+
+    #[allow(dead_code)]
+    pub fn multiply(&self, other: &Mat3) -> Mat3 {
+        let mut result = [[0.0; 3]; 3];
+        for i in 0..3 {
+            for j in 0..3 {
+                for k in 0..3 {
+                    result[i][j] += self.0[i][k] * other.0[k][j];
+                }
+            }
+        }
+        Mat3(result)
+    }
 }
 
 impl AsUniformValue for Mat3 {

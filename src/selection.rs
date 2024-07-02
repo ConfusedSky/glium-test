@@ -12,7 +12,7 @@ use bevy::{
     window::CursorMoved,
 };
 
-use crate::{hidden::Hidden, position::Position};
+use crate::{hidden::Hidden, position::Position, rendering::CameraPosition};
 
 #[derive(Resource, Default)]
 struct SelectionData {
@@ -60,6 +60,7 @@ pub struct Connection(pub Vec<Entity>);
 fn mouse_moved(
     mut commands: Commands,
     held: Res<SelectionData>,
+    camera_position: Res<CameraPosition>,
     mut queries: ParamSet<(
         Query<
             (
@@ -81,13 +82,14 @@ fn mouse_moved(
     let Some(mouse_position) = new_mouse_position else {
         return;
     };
-    let mouse_position = Position::from([mouse_position.position.x, mouse_position.position.y]);
-
+    let mouse_screen_position =
+        Position::from([mouse_position.position.x, mouse_position.position.y]);
+    let mouse_world_position = mouse_screen_position + camera_position.0;
     // if we are holding items handle hover logic
     if held.held_items.is_empty() {
         let hover_query = queries.p0();
         for (entity, position, hoverable, hovered, connection) in hover_query.iter() {
-            let distance_squared = position.distance_squared(&mouse_position);
+            let distance_squared = position.distance_squared(&mouse_world_position);
             let radius_squared = hoverable.radius.powi(2);
 
             if distance_squared < radius_squared {
@@ -118,7 +120,7 @@ fn mouse_moved(
     // otherwise handle moving held items
     } else {
         let mut drag_query = queries.p1();
-        let difference = mouse_position - *mouse_position_previous;
+        let difference = mouse_world_position - *mouse_position_previous;
         for entity in &held.held_items {
             // The saved entity could have been removed
             // in between selection and mouse_moved
@@ -129,7 +131,7 @@ fn mouse_moved(
         }
     }
 
-    *mouse_position_previous = mouse_position
+    *mouse_position_previous = mouse_world_position
 }
 
 fn grab_selection(

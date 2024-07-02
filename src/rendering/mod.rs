@@ -5,4 +5,5 @@ mod renderer;
 
 pub use color::Color;
 pub use color::Stroke;
+pub use renderer::CameraPosition;
 pub use renderer::RenderingPlugin;

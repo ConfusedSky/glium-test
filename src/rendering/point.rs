@@ -106,12 +106,12 @@ impl<'draw> Renderer<'draw> {
             varying lowp vec2 texcoord;
 
             void main() {
-                mat3 pointToWorld = mat3(
+                mat3 point_to_world = mat3(
                     point_size, 0, offset.x,
                     0, point_size, offset.y,
                     0, 0, 1
                 );
-                gl_Position = vec4(vec3(position, 1.0) * pointToWorld * world_to_view, 1.0);
+                gl_Position = vec4(vec3(position, 1.0) * point_to_world * world_to_view, 1.0);
                 texcoord = uv;
             }
         "#;

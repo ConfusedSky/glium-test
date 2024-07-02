@@ -7,7 +7,8 @@ use bevy::{
         system::{Commands, Resource},
         world::World,
     },
-    window::{RequestRedraw, WindowResized},
+    prelude::{IntoSystemConfigs, Query, Res, ResMut, With},
+    window::{PrimaryWindow, RequestRedraw, Window, WindowResized},
     winit::WinitWindows,
 };
 use glium::{glutin::surface::WindowSurface, Display, Frame, Surface};
@@ -36,7 +37,13 @@ struct Renderer<'a> {
 }
 
 #[derive(Resource)]
+struct WindowSize(pub Position);
+
+#[derive(Resource)]
 pub struct WorldToView(pub Mat3);
+
+#[derive(Default, Resource)]
+pub struct CameraPosition(pub Position);
 
 impl Renderer<'_> {
     pub fn new(display: Display<WindowSurface>) -> Self {
@@ -129,6 +136,9 @@ fn initialize_renderer(world: &mut World) {
 
 fn render_system(world: &mut World) {
     let world_to_view = world.resource::<WorldToView>().0.clone();
+    let camera_position = world.resource::<CameraPosition>().0.clone();
+    let world_to_view =
+        world_to_view.multiply(&Mat3::translate(-camera_position.x(), -camera_position.y()));
     let mut renderer = world.remove_non_send_resource::<Renderer>().unwrap();
     renderer.draw(world, &world_to_view);
     world.insert_non_send_resource(renderer);
@@ -144,6 +154,32 @@ fn update_window_size(mut commands: Commands, mut window_resized: EventReader<Wi
     println!("Window size set to: {:?}", window_size);
 
     commands.insert_resource(WorldToView(Mat3::world_to_view(window_size)));
+    commands.insert_resource(WindowSize(window_size));
+}
+
+fn update_camera_position(
+    q_windows: Query<&Window, With<PrimaryWindow>>,
+    mut camera_position: ResMut<CameraPosition>,
+    window_size: Res<WindowSize>,
+) {
+    let Some(new_position) = q_windows.single().cursor_position() else {
+        return;
+    };
+
+    let mouse_position = Position::from([new_position.x, new_position.y]);
+    let margin = 50.0;
+
+    if mouse_position.x() < margin {
+        camera_position.0 = camera_position.0 + Position::from([-1.0, 0.0]);
+    } else if mouse_position.x() > window_size.0.x() - margin {
+        camera_position.0 = camera_position.0 + Position::from([1.0, 0.0]);
+    }
+
+    if mouse_position.y() < margin {
+        camera_position.0 = camera_position.0 + Position::from([0.0, -1.0]);
+    } else if mouse_position.y() > window_size.0.y() - margin {
+        camera_position.0 = camera_position.0 + Position::from([0.0, 1.0]);
+    }
 }
 
 pub struct RenderingPlugin;
@@ -152,7 +188,11 @@ impl Plugin for RenderingPlugin {
     fn build(&self, app: &mut bevy::prelude::App) {
         app.init_resource::<PointsData>();
         app.init_resource::<LinesData>();
-        app.add_systems(bevy::app::First, update_window_size);
+        app.init_resource::<CameraPosition>();
+        app.add_systems(
+            bevy::app::First,
+            (update_window_size, update_camera_position).chain(),
+        );
         app.add_systems(bevy::app::Last, render_system);
     }
 
