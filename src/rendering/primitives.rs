@@ -79,8 +79,12 @@ impl Renderer {
             uniform vec2 window_size;
 
             void main() {
-                gl_Position = vec4(position * 2 / window_size - 1.0, 0.0, 1.0);
-                gl_Position.y = -gl_Position.y;
+                mat3 transform = mat3(
+                    2.0 / window_size.x, 0, -1.0,
+                    0, -2.0 / window_size.y, 1.0,
+                    0.0, 0.0, 1.0
+                );
+                gl_Position = vec4(vec3(position, 1.0) * transform, 1.0);
             }
         "#;
 
